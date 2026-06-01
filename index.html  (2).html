@@ -1,0 +1,2883 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>MeshiTomo - 食べ物マッチング</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --orange:#E8753A;
+    --orange-light:#FDF0E8;
+    --orange-dark:#7A3010;
+    --orange-mid:#F4A06A;
+    --bg:#FAFAF8;
+    --white:#ffffff;
+    --border:#EDE8E3;
+    --text:#1a1a1a;
+    --text-sub:#6b7280;
+    --text-hint:#9ca3af;
+    --radius:14px;
+    --radius-sm:10px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+  .app{max-width:430px;margin:0 auto;min-height:100vh;background:var(--white);display:flex;flex-direction:column}
+  .screen{display:none;flex:1;flex-direction:column;overflow:hidden}
+  .screen.active{display:flex}
+  .topbar{background:var(--white);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+  .topbar h2{font-size:16px;font-weight:700;flex:1}
+  .logo{font-size:18px;font-weight:700;color:var(--orange);flex:1}
+  .back-btn{background:none;border:none;cursor:pointer;color:var(--text-sub);font-size:22px;line-height:1;padding:0}
+  .tabbar{display:flex;border-top:1px solid var(--border);background:var(--white);flex-shrink:0}
+  .tabbar button{flex:1;background:none;border:none;padding:8px 4px 10px;cursor:pointer;font-size:10px;color:var(--text-hint);display:flex;flex-direction:column;align-items:center;gap:3px;font-family:inherit}
+  .tabbar button.active{color:var(--orange)}
+  .tabbar button svg{width:22px;height:22px}
+  .scroll{overflow-y:auto;flex:1;padding:16px}
+  .btn-primary{width:100%;padding:13px;background:var(--orange);color:#fff;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .15s}
+  .btn-primary:hover{opacity:.9}
+  .btn-primary:disabled{background:var(--border);color:var(--text-hint);cursor:not-allowed}
+  .btn-outline{width:100%;padding:13px;background:none;color:var(--orange);border:1.5px solid var(--orange);border-radius:var(--radius-sm);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+  .btn-sm{padding:7px 14px;background:var(--orange);color:#fff;border:none;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+  .btn-sm.danger{background:#fee2e2;color:#dc2626}
+  .form-group{margin-bottom:16px}
+  .form-group label{display:block;font-size:13px;font-weight:500;color:var(--text-sub);margin-bottom:6px}
+  .form-group input,.form-group select,.form-group textarea{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:15px;font-family:inherit;background:var(--white);color:var(--text);outline:none}
+  .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--orange)}
+  .form-group textarea{resize:none;line-height:1.6}
+  #screen-auth{justify-content:center;padding:32px 24px;background:linear-gradient(160deg,#FDF0E8 0%,#fff 60%)}
+  .auth-logo{text-align:center;margin-bottom:40px}
+  .auth-logo h1{font-size:36px;font-weight:700;color:var(--orange)}
+  .auth-logo p{font-size:14px;color:var(--text-sub);margin-top:6px}
+  .auth-logo .emoji{font-size:56px;display:block;margin-bottom:8px}
+  .auth-tabs{display:flex;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;margin-bottom:24px}
+  .auth-tabs button{flex:1;padding:10px;background:none;border:none;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--text-sub)}
+  .auth-tabs button.active{background:var(--orange);color:#fff}
+  .auth-error{color:#dc2626;font-size:13px;margin-bottom:12px;padding:10px;background:#fef2f2;border-radius:var(--radius-sm);display:none}
+  .genre-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .genre-btn{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:12px 6px;cursor:pointer;text-align:center;font-size:12px;color:var(--text-sub);font-family:inherit;transition:all .15s}
+  .genre-btn.selected{background:var(--orange-light);border-color:var(--orange);color:var(--orange-dark);font-weight:700}
+  .genre-icon{font-size:22px;display:block;margin-bottom:4px}
+  .match-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+  .avatar{width:52px;height:52px;border-radius:50%;background:var(--orange-light);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+  .avatar.sm{width:42px;height:42px;font-size:18px}
+  .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .tag{background:var(--orange-light);color:var(--orange-dark);font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500}
+  .memo-box{background:var(--bg);border-radius:var(--radius-sm);padding:10px 12px;margin-top:10px;font-size:13px;color:var(--text-sub);line-height:1.6;border-left:2.5px solid var(--orange)}
+  .match-actions{display:flex;gap:8px;margin-top:12px}
+  .btn-pass{flex:1;padding:10px;background:none;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-sub);cursor:pointer;font-size:14px;font-family:inherit}
+  .btn-like{flex:1;padding:10px;background:var(--orange);border:none;border-radius:var(--radius-sm);color:#fff;cursor:pointer;font-size:14px;font-weight:700;font-family:inherit}
+  .btn-like:disabled{background:var(--border);color:var(--text-hint);cursor:not-allowed}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:100;padding:24px}
+  .modal-card{background:var(--white);border-radius:var(--radius);padding:32px 24px;text-align:center;width:100%;max-width:320px}
+  .modal-card h2{font-size:22px;color:var(--orange);margin-bottom:8px}
+  .modal-card p{font-size:14px;color:var(--text-sub);margin-bottom:24px}
+  .chat-item{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--border);cursor:pointer}
+  .chat-item:last-child{border-bottom:none}
+  .chat-name{font-size:14px;font-weight:700}
+  .chat-preview{font-size:12px;color:var(--text-sub);margin-top:3px}
+  .msg-area{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:6px;background:var(--bg)}
+  .msg{max-width:72%;padding:9px 13px;border-radius:18px;font-size:14px;line-height:1.55;word-break:break-word}
+  .msg.them{background:var(--white);color:var(--text);align-self:flex-start;border-bottom-left-radius:4px;border:1px solid var(--border)}
+  .msg.me{background:var(--orange);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+  .msg-time{font-size:10px;color:var(--text-hint)}
+  .msg-time.me{align-self:flex-end}
+  .msg-time.them{align-self:flex-start}
+  .msg-input-row{display:flex;gap:8px;padding:10px 16px;border-top:1px solid var(--border);align-items:center;flex-shrink:0;background:var(--white)}
+  .msg-input-row input{flex:1;padding:9px 14px;border:1px solid var(--border);border-radius:22px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--text);outline:none}
+  .msg-input-row input:focus{border-color:var(--orange)}
+  .send-btn{width:38px;height:38px;background:var(--orange);border:none;border-radius:50%;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .profile-header{text-align:center;padding:24px 16px 20px;background:linear-gradient(160deg,var(--orange-light) 0%,var(--white) 100%);border-bottom:1px solid var(--border)}
+  .profile-avatar-lg{width:84px;height:84px;border-radius:50%;background:var(--white);display:flex;align-items:center;justify-content:center;font-size:38px;margin:0 auto 12px;border:3px solid var(--orange-light);box-shadow:0 2px 8px rgba(232,117,58,.2)}
+  .setting-row{display:flex;align-items:center;padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer}
+  .setting-row:last-child{border-bottom:none}
+  .setting-icon{width:34px;height:34px;background:var(--orange-light);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-right:12px;font-size:16px;flex-shrink:0}
+  .setting-label{font-size:14px;flex:1}
+  .toggle-row{display:flex;align-items:center;padding:14px 0;border-bottom:1px solid var(--border)}
+  .toggle-row:last-child{border-bottom:none}
+  .toggle-label{flex:1;font-size:14px}
+  .toggle-sub{font-size:12px;color:var(--text-sub);margin-top:2px}
+  .toggle{position:relative;width:44px;height:24px;flex-shrink:0}
+  .toggle input{opacity:0;width:0;height:0}
+  .slider{position:absolute;inset:0;background:var(--border);border-radius:24px;cursor:pointer;transition:.3s}
+  .slider:before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:white;border-radius:50%;transition:.3s}
+  input:checked + .slider{background:var(--orange)}
+  input:checked + .slider:before{transform:translateX(20px)}
+  .section-title{font-size:12px;font-weight:700;color:var(--text-hint);text-transform:uppercase;letter-spacing:.5px;margin:20px 0 8px;padding:0 16px}
+  .empty{text-align:center;padding:48px 24px}
+  .empty-icon{font-size:48px;margin-bottom:12px}
+  .empty h3{font-size:16px;font-weight:700;margin-bottom:6px}
+  .empty p{font-size:13px;color:var(--text-sub)}
+  .loading{text-align:center;padding:32px;color:var(--text-sub);font-size:14px}
+  .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:22px;font-size:13px;z-index:200;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+  .toast.show{opacity:1}
+  #loadingScreen{position:fixed;inset:0;background:var(--white);display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:12px}
+  #loadingScreen span{font-size:48px}
+  #loadingScreen p{font-size:14px;color:var(--text-sub)}
+  .location-bar{background:var(--orange-light);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--orange-dark);cursor:pointer}
+  .range-selector{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+  .range-btn{padding:6px 14px;border:1px solid var(--border);border-radius:20px;background:var(--bg);font-size:12px;cursor:pointer;font-family:inherit;color:var(--text-sub)}
+  .range-btn.active{background:var(--orange);color:#fff;border-color:var(--orange)}
+  .distance-badge{background:#FFF3E0;color:#E65100;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500;margin-left:4px}
+  .block-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+  .block-item:last-child{border-bottom:none}
+</style>
+</head>
+<body>
+<div id="loadingScreen"><span>🍽</span><p>MeshiTomoを起動中...</p></div>
+<div class="app">
+
+  <!-- AUTH -->
+  <div id="screen-auth" class="screen">
+    <div class="auth-logo">
+      <span class="emoji">🍽</span>
+      <h1>MeshiTomo</h1>
+      <p>食べたいジャンルで仲間を見つけよう</p>
+    </div>
+    <div class="auth-tabs">
+      <button class="active" onclick="switchAuth('login')">ログイン</button>
+      <button onclick="switchAuth('signup')">新規登録</button>
+    </div>
+    <div class="auth-error" id="authError"></div>
+    <div class="form-group"><label>メールアドレス</label><input type="email" id="authEmail" placeholder="example@email.com" onkeydown="if(event.key==='Enter')document.getElementById('authPassword').focus()"></div>
+    <div class="form-group"><label>パスワード</label><input type="password" id="authPassword" placeholder="6文字以上" onkeydown="if(event.key==='Enter')handleAuth()"></div>
+    <div id="termsCheck" style="display:none;margin-bottom:16px">
+      <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--text-sub);cursor:pointer">
+        <input type="checkbox" id="agreeTerms" style="width:16px;height:16px;margin-top:2px;flex-shrink:0;accent-color:var(--orange)">
+        <span><a onclick="showScreen('screen-terms')" style="color:var(--orange);cursor:pointer">利用規約</a>・<a onclick="showScreen('screen-privpolicy')" style="color:var(--orange);cursor:pointer">プライバシーポリシー</a>に同意する（18歳以上）</span>
+      </label>
+    </div>
+    <button class="btn-primary" id="authBtn" onclick="handleAuth()">ログイン</button>
+    <button onclick="showScreen('screen-reset')" style="background:none;border:none;color:var(--text-sub);font-size:13px;cursor:pointer;font-family:inherit;margin-top:12px;width:100%">パスワードを忘れた方はこちら</button>
+  </div>
+
+  <!-- PASSWORD RESET -->
+  <div id="screen-reset" class="screen" style="justify-content:center;padding:32px 24px">
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="font-size:48px;margin-bottom:12px">🔑</div>
+      <h2 style="font-size:20px;font-weight:700;margin-bottom:8px">パスワードリセット</h2>
+      <p style="font-size:13px;color:var(--text-sub)">登録したメールアドレスにリセットリンクを送ります</p>
+    </div>
+    <div class="form-group"><label>メールアドレス</label><input type="email" id="resetEmail" placeholder="example@email.com"></div>
+    <div id="resetMsg" style="display:none;padding:12px;border-radius:var(--radius-sm);font-size:13px;margin-bottom:12px"></div>
+    <button class="btn-primary" id="resetBtn" onclick="sendPasswordReset()">リセットメールを送る</button>
+    <button onclick="showScreen('screen-auth')" style="background:none;border:none;color:var(--text-sub);font-size:13px;cursor:pointer;font-family:inherit;margin-top:12px;width:100%">ログイン画面に戻る</button>
+  </div>
+
+  <!-- TUTORIAL -->
+  <div id="screen-tutorial" class="screen" style="flex-direction:column">
+    <div style="flex:1;overflow:hidden;position:relative">
+      <div id="tutorialSlides" style="display:flex;transition:transform .3s;height:100%">
+        <div style="min-width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center">
+          <div style="font-size:72px;margin-bottom:20px">🍽</div>
+          <h2 style="font-size:22px;font-weight:700;margin-bottom:12px">MeshiTomoへようこそ！</h2>
+          <p style="font-size:14px;color:var(--text-sub);line-height:1.8">食べたいジャンルで仲間を見つけよう。一人のご飯がもっと楽しくなります！</p>
+        </div>
+        <div style="min-width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center">
+          <div style="font-size:72px;margin-bottom:20px">🎯</div>
+          <h2 style="font-size:22px;font-weight:700;margin-bottom:12px">ジャンルで選ぶ</h2>
+          <p style="font-size:14px;color:var(--text-sub);line-height:1.8">今日食べたいジャンルを選んで「マッチングを探す」を押すだけ！同じものが食べたい人が見つかります。</p>
+        </div>
+        <div style="min-width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center">
+          <div style="font-size:72px;margin-bottom:20px">❤️</div>
+          <h2 style="font-size:22px;font-weight:700;margin-bottom:12px">いいねでマッチング</h2>
+          <p style="font-size:14px;color:var(--text-sub);line-height:1.8">気になった人に「いいね！」を押しましょう。お互いいいねするとマッチング成立！チャットで待ち合わせを決めよう。</p>
+        </div>
+        <div style="min-width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center">
+          <div style="font-size:72px;margin-bottom:20px">👥</div>
+          <h2 style="font-size:22px;font-weight:700;margin-bottom:12px">グループで食事</h2>
+          <p style="font-size:14px;color:var(--text-sub);line-height:1.8">3人以上で食事を楽しみたいならグループ機能を使おう！グループを作って仲間を募集できます。</p>
+        </div>
+        <div style="min-width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center">
+          <div style="font-size:72px;margin-bottom:20px">🌟</div>
+          <h2 style="font-size:22px;font-weight:700;margin-bottom:12px">安心して使おう</h2>
+          <p style="font-size:14px;color:var(--text-sub);line-height:1.8">初めて会う際は公共の場所で。割り勘が基本です。不審なユーザーは通報・ブロックできます。</p>
+          <button class="btn-primary" onclick="finishTutorial()" style="margin-top:24px">はじめる！</button>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:center;gap:8px;padding:16px;flex-shrink:0" id="tutorialDots"></div>
+    <div style="display:flex;justify-content:space-between;padding:0 16px 16px;flex-shrink:0">
+      <button onclick="prevTutorial()" style="background:none;border:none;color:var(--text-sub);cursor:pointer;font-family:inherit;font-size:13px">← 前へ</button>
+      <button onclick="skipTutorial()" style="background:none;border:none;color:var(--text-hint);cursor:pointer;font-family:inherit;font-size:13px">スキップ</button>
+      <button onclick="nextTutorial()" style="background:none;border:none;color:var(--orange);cursor:pointer;font-family:inherit;font-size:13px;font-weight:700">次へ →</button>
+    </div>
+  </div>
+
+  <!-- PROFILE SETUP -->
+  <div id="screen-setup" class="screen" style="flex-direction:column">
+    <div class="topbar"><h2>プロフィール設定</h2></div>
+    <div class="scroll">
+      <div class="form-group">
+        <label>プロフィール写真</label>
+        <div style="display:flex;align-items:center;gap:16px">
+          <div id="avatarPreview" style="width:72px;height:72px;border-radius:50%;background:var(--orange-light);display:flex;align-items:center;justify-content:center;font-size:32px;flex-shrink:0;overflow:hidden">🍽</div>
+          <div>
+            <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="previewAvatar(this)">
+            <button class="btn-sm" onclick="document.getElementById('avatarInput').click()">写真を選ぶ</button>
+            <p style="font-size:11px;color:var(--text-hint);margin-top:6px">JPG・PNG・5MB以内</p>
+          </div>
+        </div>
+      </div>
+      <div class="form-group"><label>ニックネーム</label><input type="text" id="setupName" placeholder="例：さくら"></div>
+      <div class="form-group">
+        <label>生年月日 <span style="color:#dc2626;font-size:11px">※18歳以上のみ利用可能</span></label>
+        <input type="date" id="setupBirthDate" max="" onchange="checkAge()">
+        <div id="ageError" style="color:#dc2626;font-size:12px;margin-top:4px;display:none">18歳未満の方はご利用いただけません。</div>
+        <div id="ageOk" style="color:#1D9E75;font-size:12px;margin-top:4px;display:none"></div>
+      </div>
+      <div class="form-group"><label>年齢</label><input type="number" id="setupAge" placeholder="例：25" min="18" max="99" readonly></div>
+      <div class="form-group">
+        <label>性別</label>
+        <select id="setupGender">
+          <option value="">選択してください</option>
+          <option value="male">男性</option>
+          <option value="female">女性</option>
+          <option value="other">その他・回答しない</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>都道府県</label>
+        <select id="setupPref">
+          <option value="">選択してください</option>
+          <option>北海道</option><option>青森県</option><option>岩手県</option><option>宮城県</option><option>秋田県</option><option>山形県</option><option>福島県</option><option>茨城県</option><option>栃木県</option><option>群馬県</option><option>埼玉県</option><option>千葉県</option><option>東京都</option><option>神奈川県</option><option>新潟県</option><option>富山県</option><option>石川県</option><option>福井県</option><option>山梨県</option><option>長野県</option><option>岐阜県</option><option>静岡県</option><option>愛知県</option><option>三重県</option><option>滋賀県</option><option>京都府</option><option>大阪府</option><option>兵庫県</option><option>奈良県</option><option>和歌山県</option><option>鳥取県</option><option>島根県</option><option>岡山県</option><option>広島県</option><option>山口県</option><option>徳島県</option><option>香川県</option><option>愛媛県</option><option>高知県</option><option>福岡県</option><option>佐賀県</option><option>長崎県</option><option>熊本県</option><option>大分県</option><option>宮崎県</option><option>鹿児島県</option><option>沖縄県</option>
+        </select>
+      </div>
+      <div class="form-group"><label>市区町村（任意）</label><input type="text" id="setupCity" placeholder="例：名古屋市"></div>
+      <div class="form-group"><label>自己紹介</label><textarea id="setupBio" rows="3" placeholder="食の好みや、一緒に行きたいお店など気軽に書いてください"></textarea></div>
+      <div class="form-group">
+        <label>好きな料理・食のキーワード <span style="font-size:11px;color:var(--text-sub)">（検索で使われます）</span></label>
+        <input type="text" id="setupFoodKeywords" placeholder="例：餃子 つけ麺 辛いもの 家系ラーメン 肉料理">
+        <p style="font-size:11px;color:var(--text-hint);margin-top:4px">スペース区切りで複数入力できます</p>
+      </div>
+      <div class="form-group">
+        <label>好きな食ジャンル（複数選択可）</label>
+        <div class="genre-grid" id="setupGenreGrid" style="margin-top:8px"></div>
+      </div>
+      <div id="setupError" style="color:#dc2626;font-size:13px;margin-bottom:12px;padding:10px;background:#fef2f2;border-radius:8px;display:none"></div>
+      <button class="btn-primary" id="setupBtn" onclick="saveProfile()" style="margin-top:8px">はじめる</button>
+    </div>
+  </div>
+
+  <!-- GENRE HOME -->
+  <div id="screen-genre" class="screen" style="flex-direction:column">
+    <div class="topbar"><span class="logo">🍽 MeshiTomo</span></div>
+    <div class="scroll">
+      <div id="recommendedGenre" style="background:linear-gradient(135deg,var(--orange),var(--orange-mid));color:#fff;border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:8px;font-size:13px;flex-wrap:wrap"></div>
+      <div class="location-bar" onclick="getLocation()">
+        <span>📍</span>
+        <span id="locationText">ここをタップして位置情報を取得</span>
+        <span style="margin-left:auto;font-size:11px;color:var(--orange)">更新</span>
+      </div>
+      <p style="font-size:12px;color:var(--text-sub);margin-bottom:8px;font-weight:500">検索範囲</p>
+      <div class="range-selector">
+        <button class="range-btn" onclick="setRange(1)" id="range-1">1km以内</button>
+        <button class="range-btn active" onclick="setRange(5)" id="range-5">5km以内</button>
+        <button class="range-btn" onclick="setRange(10)" id="range-10">10km以内</button>
+        <button class="range-btn" onclick="setRange(50)" id="range-50">50km以内</button>
+        <button class="range-btn" onclick="setRange(99999)" id="range-99999">全国</button>
+      </div>
+      <p style="font-size:12px;color:var(--text-sub);margin-bottom:8px;font-weight:500">いつ食べに行きたい？</p>
+      <div class="range-selector">
+        <button class="range-btn active" onclick="setDate('today')" id="date-today">今日</button>
+        <button class="range-btn" onclick="setDate('tomorrow')" id="date-tomorrow">明日</button>
+        <button class="range-btn" onclick="setDate('weekend')" id="date-weekend">今週末</button>
+        <button class="range-btn" onclick="setDate('pick')" id="date-pick">日付を選ぶ</button>
+      </div>
+      <div id="datePickerWrap" style="display:none;margin-bottom:12px">
+        <input type="date" id="datePicker" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:inherit;color:var(--text);background:var(--white);outline:none" onchange="onDatePicked()">
+      </div>
+      <div id="selectedDateLabel" style="font-size:13px;color:var(--orange);font-weight:500;margin-bottom:12px">📅 今日</div>
+      <p style="font-size:12px;color:var(--text-sub);margin-bottom:12px;font-weight:500">食べたいジャンルを選ぼう</p>
+      <div class="genre-grid" id="genreGrid"></div>
+      <button class="btn-primary" id="matchBtn" disabled onclick="goToMatches()" style="margin-top:16px">マッチングを探す 🔍</button>
+      <button onclick="showScreen('screen-quick');loadQuickMatches()" style="width:100%;padding:11px;background:none;border:1.5px solid var(--orange);border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--orange);margin-top:10px">⚡ 直前マッチング（今すぐ！）</button>
+      <button onclick="showScreen('screen-shop-search')" style="width:100%;padding:11px;background:none;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--text-sub);margin-top:10px">🔍 お店を探す</button>
+    </div>
+  </div>
+
+  <!-- MATCH LIST -->
+  <div id="screen-match" class="screen" style="flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="showTab('genre')">←</button>
+      <h2 id="matchTitle">近くのユーザー</h2>
+      <button style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--orange);font-weight:700" onclick="showScreen('screen-filter')">絞り込み</button>
+    </div>
+    <div class="scroll" id="matchList"></div>
+  </div>
+
+  <!-- CHAT LIST -->
+  <div id="screen-chat-list" class="screen" style="flex-direction:column">
+    <div class="topbar">
+      <h2>メッセージ</h2>
+      <button onclick="showScreen('screen-notifications-list');loadNotifications()" style="background:none;border:none;cursor:pointer;position:relative;padding:4px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span id="notifBadge" style="display:none;position:absolute;top:0;right:0;width:14px;height:14px;background:#dc2626;border-radius:50%;font-size:9px;color:#fff;display:flex;align-items:center;justify-content:center">!</span>
+      </button>
+    </div>
+    <div class="scroll" id="chatList"></div>
+  </div>
+
+  <!-- NOTIFICATIONS LIST -->
+  <div id="screen-notifications-list" class="screen" style="flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="showTab('chat')">←</button>
+      <h2>通知</h2>
+    </div>
+    <div class="scroll" id="notificationsList"></div>
+  </div>
+
+  <!-- FOOD FRIENDS LIST -->
+  <div id="screen-food-friends" class="screen" style="flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="showScreen('screen-profile')">←</button>
+      <h2>食仲間</h2>
+    </div>
+    <div class="scroll" id="foodFriendsList"></div>
+  </div>
+
+  <!-- PREMIUM SCREEN -->
+  <div id="screen-premium" class="screen" style="flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="showScreen('screen-profile')">←</button>
+      <h2>✨ プレミアムプラン</h2>
+    </div>
+    <div class="scroll">
+      <div style="background:linear-gradient(135deg,#E8753A,#F4A06A);border-radius:var(--radius);padding:24px;color:#fff;text-align:center;margin-bottom:24px">
+        <div style="font-size:48px;margin-bottom:12px">👑</div>
+        <div style="font-size:20px;font-weight:700;margin-bottom:6px">MeshiTomoプレミアム</div>
+        <div style="font-size:14px;opacity:.9">もっと自由に食仲間を見つけよう</div>
+      </div>
+
+      <div id="premiumStatus" style="margin-bottom:20px"></div>
+
+      <p style="font-size:13px;font-weight:700;margin-bottom:12px">プレミアム特典</p>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px">
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg);border-radius:var(--radius-sm)">
+          <div style="font-size:24px">❤️</div>
+          <div><div style="font-size:14px;font-weight:700">いいね無制限</div><div style="font-size:12px;color:var(--text-sub)">無料は1日10回まで→無制限に</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg);border-radius:var(--radius-sm)">
+          <div style="font-size:24px">🔍</div>
+          <div><div style="font-size:14px;font-weight:700">絞り込みフル機能</div><div style="font-size:12px;color:var(--text-sub)">年齢・性別・エリアで詳細絞り込み</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg);border-radius:var(--radius-sm)">
+          <div style="font-size:24px">👥</div>
+          <div><div style="font-size:14px;font-weight:700">グループ無制限作成</div><div style="font-size:12px;color:var(--text-sub)">無料は3つまで→無制限に</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg);border-radius:var(--radius-sm)">
+          <div style="font-size:24px">✅</div>
+          <div><div style="font-size:14px;font-weight:700">既読確認</div><div style="font-size:12px;color:var(--text-sub)">メッセージが読まれたか確認できる</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg);border-radius:var(--radius-sm)">
+          <div style="font-size:24px">⭐</div>
+          <div><div style="font-size:14px;font-weight:700">優先表示</div><div style="font-size:12px;color:var(--text-sub)">マッチング一覧の上位に表示される</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg);border-radius:var(--radius-sm)">
+          <div style="font-size:24px">👑</div>
+          <div><div style="font-size:14px;font-weight:700">プレミアムバッジ</div><div style="font-size:12px;color:var(--text-sub)">プロフィールに王冠バッジが表示</div></div>
+        </div>
+      </div>
+
+      <p style="font-size:13px;font-weight:700;margin-bottom:12px">プランを選ぶ</p>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px">
+        <div id="plan-monthly" onclick="selectPlan('monthly')" style="border:2px solid var(--orange);border-radius:var(--radius-sm);padding:16px;cursor:pointer;background:var(--orange-light)">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:15px;font-weight:700">月額プラン</div>
+              <div style="font-size:12px;color:var(--text-sub);margin-top:2px">いつでも解約可能</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:22px;font-weight:700;color:var(--orange)">¥480</div>
+              <div style="font-size:11px;color:var(--text-sub)">/月</div>
+            </div>
+          </div>
+        </div>
+        <div id="plan-yearly" onclick="selectPlan('yearly')" style="border:2px solid var(--border);border-radius:var(--radius-sm);padding:16px;cursor:pointer;position:relative">
+          <div style="position:absolute;top:-10px;right:12px;background:#dc2626;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px">お得！2ヶ月分無料</div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:15px;font-weight:700">年額プラン</div>
+              <div style="font-size:12px;color:var(--text-sub);margin-top:2px">月換算 ¥400</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:22px;font-weight:700;color:var(--orange)">¥4,800</div>
+              <div style="font-size:11px;color:var(--text-sub)">/年</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="purchaseBtn" onclick="startPurchase()">✨ プレミアムに登録する</button>
+      <p style="font-size:11px;color:var(--text-hint);text-align:center;margin-top:12px;line-height:1.6">※現在はテスト版のため決済は行われません。正式リリース時にStripe決済を導入予定です。</p>
+    </div>
+  </div>
+
+  <!-- GROUP CHAT -->
+  <div id="screen-group-chat" class="screen" style="flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="showScreen('screen-group-detail')">←</button>
+      <h2 id="groupChatName">グループチャット</h2>
+    </div>
+    <div class="msg-area" id="groupMsgArea" style="background:var(--bg)"></div>
+    <div class="msg-input-row">
+      <input type="text" id="groupMsgInput" placeholder="メッセージを入力..." onkeydown="if(event.key==='Enter')sendGroupMessage()">
+      <button class="send-btn" onclick="sendGroupMessage()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- SHOP SEARCH -->
+  <div id="screen-shop-search" class="screen" style="flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="showTab('genre')">←</button>
+      <h2>🔍 お店を探す</h2>
+    </div>
+    <div class="scroll">
+      <div class="form-group">
+        <label>キーワード</label>
+        <input type="text" id="shopKeyword" placeholder="例：ラーメン 名古屋駅" onkeydown="if(event.key==='Enter')searchShop()">
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="btn-primary" onclick="searchShop()" style="flex:1">検索する</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+        <button onclick="openShopSearch('食べログ')" style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;cursor:pointer;text-align:center;font-family:inherit">
+          <div style="font-size:28px;margin-bottom:6px">🍽</div>
+          <div style="font-size:13px;font-weight:700">食べログで探す</div>
+        </button>
+        <button onclick="openShopSearch('ホットペッパー')" style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;cursor:pointer;text-align:center;font-family:inherit">
+          <div style="font-size:28px;margin-bottom:6px">🌶</div>
+          <div style="font-size:13px;font-weight:700">ホットペッパーで探す</div>
+        </button>
+        <button onclick="openShopSearch('Googleマップ')" style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;cursor:pointer;text-align:center;font-family:inherit">
+          <div style="font-size:28px;margin-bottom:6px">🗺</div>
+          <div style="font-size:13px;font-weight:700">Googleマップで探す</div>
+        </button>
+        <button onclick="openShopSearch('じゃらん')" style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;cursor:pointer;text-align:center;font-family:inherit">
+          <div style="font-size:28px;margin-bottom:6px">🏨</div>
+          <div style="font-size:13px;font-weight:700">じゃらんで探す</div>
+        </button>
+      </div>
+      <p style="font-size:12px;color:var(--text-hint);text-align:center">外部サイトに移動します</p>
+    </div>
+  </div>
+
+  <!-- CHAT ROOM -->
+  <div id="screen-chat" class="screen" style="flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="showScreen('screen-chat-list')">←</button>
+      <h2 id="chatPartnerName"></h2>
+      <button style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--orange);font-weight:700" onclick="addFoodFriend(currentChatPartnerId, currentChatPartnerName)">🍽 食仲間</button>
+      <button style="background:none;border:none;cursor:pointer;font-size:13px;color:#dc2626" onclick="blockUser()">通報</button>
+    </div>
+    <div class="msg-area" id="msgArea"></div>
+    <div class="msg-input-row">
+      <input type="text" id="msgInput" placeholder="メッセージを入力..." onkeydown="if(event.key==='Enter')sendMessage()">
+      <button class="send-btn" onclick="sendMessage()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- PROFILE -->
+  <div id="screen-profile" class="screen" style="flex-direction:column">
+    <div class="topbar"><h2>プロフィール</h2></div>
+    <div class="scroll" style="padding:0">
+      <div class="profile-header">
+        <div id="profileAvatarLg" style="width:84px;height:84px;border-radius:50%;background:var(--orange-light);display:flex;align-items:center;justify-content:center;font-size:38px;margin:0 auto 12px;border:3px solid var(--orange-light);box-shadow:0 2px 8px rgba(232,117,58,.2);overflow:hidden">🍽</div>
+        <div style="font-size:20px;font-weight:700" id="profileName">-</div>
+        <div style="font-size:13px;color:var(--text-sub);margin-top:4px" id="profileSub">-</div>
+        <div id="premiumBadge" style="display:none;margin-top:8px">
+          <span style="background:linear-gradient(135deg,#E8753A,#F4A06A);color:#fff;font-size:12px;padding:4px 12px;border-radius:20px;font-weight:700">👑 プレミアム会員</span>
+        </div>
+        <button onclick="showScreen('screen-premium');loadPremiumStatus()" style="margin-top:12px;background:linear-gradient(135deg,#E8753A,#F4A06A);color:#fff;border:none;border-radius:20px;padding:8px 20px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">✨ プレミアムプラン</button>
+      </div>
+      <div class="section-title">アカウント</div>
+      <div style="padding:0 16px">
+        <div class="setting-row" onclick="goToSetup()"><div class="setting-icon">✏️</div><span class="setting-label">プロフィール編集</span><span style="color:var(--text-hint)">›</span></div>
+        <div class="setting-row" onclick="showScreen('screen-badges');loadBadgeScreen()"><div class="setting-icon">🏆</div><span class="setting-label">バッジ</span><span style="color:var(--text-hint)">›</span></div>
+        <div class="setting-row" onclick="showScreen('screen-food-friends');loadFoodFriends()"><div class="setting-icon">🍽</div><span class="setting-label">食仲間</span><span style="color:var(--text-hint)">›</span></div>
+        <div class="setting-row" onclick="showScreen('screen-meal-report');loadMealReports()"><div class="setting-icon">📝</div><span class="setting-label">食事レポート</span><span style="color:var(--text-hint)">›</span></div>
+        <div class="setting-row" onclick="showScreen('screen-wish-shops');loadWishShops()"><div class="setting-icon">📋</div><span class="setting-label">行きたいお店リスト</span><span style="color:var(--text-hint)">›</span></div>
+      </div>
+      <div class="section-title">設定</div>
+      <div style="padding:0 16px">
+        <div class="setting-row" onclick="showScreen('screen-notifications')"><div class="setting-icon">🔔</div><span class="setting-label">通知設定</span><span style="color:var(--text-hint)">›</span></div>
+        <div class="setting-row" onclick="showScreen('screen-privacy')"><div class="setting-icon">🔒</div><span class="setting-label">プライバシー設定</span><span style="color:var(--text-hint)">›</span></div>
+        <div class="setting-row" onclick="loadBlockList()"><div class="setting-icon">🛡</div><span class="setting-label">ブロックリスト</span><span style="color:var(--text-hint)">›</span></div>
+        <div class="setting-row" onclick="showScreen('screen-verify')"><div class="setting-icon">🪪</div><span class="setting-label">本人確認</span><span style="color:var(--text-hint)">›</span></div>
+      </div>
+      <div class="section-title">その他</div>
+      <div style="padding:0 16px">
+        <div class="setting-row" onclick="showScreen('screen-contact')"><div class="setting-icon">✉️</div><span class="setting-label">お問い合わせ</span><span style="color:var(--text-hint)">›</span></div>
+        <div class="setting-row" onclick="showScreen('screen-operator')"><div class="setting-icon">🏢</div><span class="setting-label">運営者情報</span><span style="color:var(--text-hint)">›</span></div>
+        <div class="setting-row" onclick="showScreen('screen-terms')"><div class="setting-icon">📄</div><span class="setting-label">利用規約</span><span style="color:var(--text-hint)">›</span></div>
+        <div class="setting-row" onclick="showScreen('screen-privpolicy')"><div class="setting-icon">🔏</div><span class="setting-label">プライバシーポリシー</span><span style="color:var(--text-hint)">›</span></div>
+        <div class="setting-row" onclick="signOut()"><div class="setting-icon">🚪</div><span class="setting-label" style="color:#dc2626">ログアウト</span></div>
+        <div class="setting-row" onclick="showWithdrawConfirm()"><div class="setting-icon">🗑</div><span class="setting-label" style="color:#dc2626">退会する</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICATIONS -->
+  <div id="screen-notifications" class="screen" style="flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="showScreen('screen-profile')">←</button>
+      <h2>通知設定</h2>
+    </div>
+    <div class="scroll">
+      <p style="font-size:13px;color:var(--text-sub);margin-bottom:20px">受け取りたい通知をON/OFFで設定できます</p>
+      <div class="toggle-row">
+        <div style="flex:1">
+          <div class="toggle-label">マッチング成立</div>
+          <div class="toggle-sub">お互いにいいねしてマッチングしたとき</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="notif-match" checked onchange="saveNotifSettings()"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <div style="flex:1">
+          <div class="toggle-label">メッセージ受信</div>
+          <div class="toggle-sub">チャットでメッセージが届いたとき</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="notif-message" checked onchange="saveNotifSettings()"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <div style="flex:1">
+          <div class="toggle-label">いいね受信</div>
+          <div class="toggle-sub">誰かがいいねしてくれたとき</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="notif-like" checked onchange="saveNotifSettings()"><span class="slider"></span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRIVACY -->
+  <div id="screen-privacy" class="screen" style="flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="showScreen('screen-profile')">←</button>
+      <h2>プライバシー設定</h2>
+    </div>
+    <div class="scroll">
+      <p style="font-size:13px;color:var(--text-sub);margin-bottom:20px">プロフィールの公開範囲を設定できます</p>
+      <div class="toggle-row">
+        <div style="flex:1">
+          <div class="toggle-label">年齢を非表示にする</div>
+          <div class="toggle-sub">他のユーザーに年齢が表示されなくなります</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="priv-age" onchange="savePrivacySettings()"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <div style="flex:1">
+          <div class="toggle-label">オンライン状態を非表示</div>
+          <div class="toggle-sub">最終ログイン時刻が表示されなくなります</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="priv-online" onchange="savePrivacySettings()"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <div style="flex:1">
+          <div class="toggle-label">既読表示をOFFにする</div>
+          <div class="toggle-sub">メッセージを読んでも相手に既読が付きません</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="priv-read" onchange="savePrivacySettings()"><span class="slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <div style="flex:1">
+          <div class="toggle-label">マッチング中のみプロフィール公開</div>
+          <div class="toggle-sub">マッチングした相手にのみプロフィールを表示</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="priv-matched" onchange="savePrivacySettings()"><span class="slider"></span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- BLOCK LIST -->
+  <div id="screen-blocklist" class="screen" style="flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="showScreen('screen-profile')">←</button>
+      <h2>ブロックリスト</h2>
+    </div>
+    <div class="scroll" id="blockListContent"></div>
+  </div>
+
+  <!-- IDENTITY VERIFICATION -->
+  <div id="screen-verify" class="screen" style="flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="showScreen('screen-profile')">←</button>
+      <h2>本人確認</h2>
+    </div>
+    <div class="scroll">
+      <div style="text-align:center;padding:16px 0 24px">
+        <div style="font-size:48px;margin-bottom:12px">🪪</div>
+        <h3 style="font-size:17px;font-weight:700;margin-bottom:8px">本人確認について</h3>
+        <p style="font-size:13px;color:var(--text-sub);line-height:1.7">安全なご利用のため、本人確認をお願いしています。確認済みのユーザーには認証バッジが表示されます。</p>
+      </div>
+      <div style="background:var(--orange-light);border-radius:var(--radius-sm);padding:16px;margin-bottom:20px">
+        <p style="font-size:13px;color:var(--orange-dark);font-weight:700;margin-bottom:8px">✅ 本人確認でできること</p>
+        <ul style="font-size:13px;color:var(--text-sub);margin-left:16px;line-height:2">
+          <li>プロフィールに認証バッジが表示される</li>
+          <li>18歳以上であることが証明される</li>
+          <li>他のユーザーからの信頼度が上がる</li>
+        </ul>
+      </div>
+      <div class="form-group">
+        <label>確認書類の種類</label>
+        <select id="verifyDocType">
+          <option>運転免許証</option>
+          <option>マイナンバーカード</option>
+          <option>パスポート</option>
+          <option>健康保険証</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>書類の写真をアップロード</label>
+        <div style="border:2px dashed var(--border);border-radius:var(--radius-sm);padding:24px;text-align:center;cursor:pointer" onclick="document.getElementById('verifyDocInput').click()">
+          <div id="verifyDocPreview" style="font-size:32px;margin-bottom:8px">📄</div>
+          <p style="font-size:13px;color:var(--text-sub)">タップして書類をアップロード</p>
+          <p style="font-size:11px;color:var(--text-hint);margin-top:4px">JPG・PNG・5MB以内</p>
+        </div>
+        <input type="file" id="verifyDocInput" accept="image/*" style="display:none" onchange="previewVerifyDoc(this)">
+      </div>
+      <div style="background:#fef2f2;border-radius:var(--radius-sm);padding:12px;margin-bottom:16px">
+        <p style="font-size:12px;color:#dc2626">⚠️ アップロードした書類は本人確認にのみ使用します。第三者への提供は一切行いません。</p>
+      </div>
+      <button class="btn-primary" onclick="submitVerification()">本人確認を申請する</button>
+    </div>
+  </div>
+
+  <!-- TERMS -->
+  <div id="screen-terms" class="screen" style="flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="showScreen('screen-profile')">←</button>
+      <h2>利用規約</h2>
+    </div>
+    <div class="scroll" style="font-size:13px;line-height:1.8;color:var(--text)">
+      <p style="color:var(--text-sub);margin-bottom:16px">最終更新日：2025年5月1日</p>
+
+      <h3 style="font-size:14px;font-weight:700;margin:16px 0 8px">第1条（目的）</h3>
+      <p>本利用規約（以下「本規約」）は、MeshiTomo運営事務局（以下「当社」）が提供するMeshiTomo（以下「本サービス」）の利用条件を定めるものです。本サービスは、食事を通じた健全な交流・友人作りを目的としたマッチングサービスです。</p>
+
+      <h3 style="font-size:14px;font-weight:700;margin:16px 0 8px">第2条（利用資格）</h3>
+      <p>本サービスは<strong>18歳以上</strong>の方のみご利用いただけます。18歳未満の方の利用は固くお断りします。また、過去に本サービスを退会または利用停止された方は、再登録できない場合があります。</p>
+
+      <h3 style="font-size:14px;font-weight:700;margin:16px 0 8px">第3条（サービスの目的）</h3>
+      <p>本サービスは食事を一緒に楽しむ仲間を探すことを目的としています。恋愛・交際・性的な目的での利用は禁止します。</p>
+
+      <h3 style="font-size:14px;font-weight:700;margin:16px 0 8px">第4条（禁止事項）</h3>
+      <p>以下の行為を禁止します。違反した場合は予告なくアカウントを停止します。</p>
+      <ul style="margin:8px 0 8px 16px">
+        <li>虚偽の情報（年齢・氏名・写真等）を登録すること</li>
+        <li>18歳未満であるにもかかわらず登録すること</li>
+        <li>他のユーザーへの嫌がらせ・誹謗中傷・脅迫</li>
+        <li>営業・勧誘・宗教活動・マルチ商法目的での利用</li>
+        <li>わいせつなコンテンツの送信・要求</li>
+        <li>性的な目的での利用・性的な行為の要求</li>
+        <li><strong>金銭のやり取り（おごり目的・援助交際・金銭の要求・ギフト詐欺を含む）</strong></li>
+        <li>個人情報の無断収集・悪用</li>
+        <li>本サービスの運営を妨げる行為</li>
+        <li>他のユーザーを危険にさらす行為</li>
+        <li>法令に違反する一切の行為</li>
+        <li>その他、当社が不適切と判断する行為</li>
+      </ul>
+
+      <h3 style="font-size:14px;font-weight:700;margin:16px 0 8px">第5条（ユーザーの自己責任）</h3>
+      <ul style="margin:8px 0 8px 16px">
+        <li>他のユーザーと実際に会うか否かは、ユーザー自身の判断と責任において決定するものとします</li>
+        <li>ユーザー同士のトラブルが発生した場合、当社は一切介入できません</li>
+        <li>チャットや投稿で個人情報を開示することは自己責任です</li>
+        <li>本サービスを通じた金銭トラブル・人身事故等について、当社は一切の責任を負いません</li>
+        <li>初めて会う際は必ず公共の場所を選び、信頼できる人に会う場所・時間を伝えてください</li>
+      </ul>
+
+      <h3 style="font-size:14px;font-weight:700;margin:16px 0 8px">第6条（アカウント停止の基準）</h3>
+      <p>当社は以下の場合、予告なくアカウントを停止または削除できるものとします。</p>
+      <ul style="margin:8px 0 8px 16px">
+        <li>本規約に違反した場合</li>
+        <li>当社が不適切と判断した場合</li>
+        <li>他のユーザーから複数の通報があった場合</li>
+        <li>長期間利用がない場合</li>
+      </ul>
+      <p><strong>停止理由の開示義務はなく</strong>、停止に対する異議申し立ては原則受け付けません。</p>
+
+      <h3 style="font-size:14px;font-weight:700;margin:16px 0 8px">第7条（投稿内容の権利と管理）</h3>
+      <ul style="margin:8px 0 8px 16px">
+        <li>ユーザーが投稿したコンテンツの責任はユーザー本人にあります</li>
+        <li>当社は違法・不適切と判断した投稿を予告なく削除できます</li>
+        <li>当社はメッセージや投稿内容を常時監視する義務を負いません</li>
+        <li>ユーザーは投稿コンテンツについて、当社がサービス改善目的で利用することに同意します</li>
+      </ul>
+
+      <h3 style="font-size:14px;font-weight:700;margin:16px 0 8px">第8条（運営の責任範囲・免責事項）</h3>
+      <p>当社は以下について一切の責任を負いません。</p>
+      <ul style="margin:8px 0 8px 16px">
+        <li>サービスの中断・停止・終了による損害</li>
+        <li>ユーザー同士の金銭トラブル・人身トラブル</li>
+        <li>ユーザーが投稿した内容の正確性・信頼性</li>
+        <li>本サービスを通じたウイルス感染・不正アクセスによる損害</li>
+        <li>天災・通信障害等の不可抗力によるサービス停止</li>
+      </ul>
+
+      <h3 style="font-size:14px;font-weight:700;margin:16px 0 8px">第9条（サーバー障害・データ消失時の免責）</h3>
+      <ul style="margin:8px 0 8px 16px">
+        <li>サーバー障害によるデータ消失が発生した場合でも、当社は責任を負いません</li>
+        <li>当社はデータのバックアップ義務を負いません</li>
+        <li>消失したデータの復元を保証しません</li>
+      </ul>
+
+      <h3 style="font-size:14px;font-weight:700;margin:16px 0 8px">第10条（データの保存期間）</h3>
+      <ul style="margin:8px 0 8px 16px">
+        <li>退会時：アカウント情報・プロフィール・メッセージを速やかに削除します</li>
+        <li>退会しない場合：最終ログインから2年間保存します。2年以上ログインがない場合、予告なくアカウントを削除する場合があります</li>
+        <li>法令に基づき保存が必要なデータは、法令の定める期間保存します</li>
+      </ul>
+
+      <h3 style="font-size:14px;font-weight:700;margin:16px 0 8px">第11条（Cookie・アクセス解析）</h3>
+      <ul style="margin:8px 0 8px 16px">
+        <li>本サービスはCookieを使用する場合があります</li>
+        <li>サービス改善のためGoogleアナリティクス等のアクセス解析ツールを使用する場合があります</li>
+        <li>アクセス解析で収集されるデータは個人を特定するものではありません</li>
+      </ul>
+
+      <h3 style="font-size:14px;font-weight:700;margin:16px 0 8px">第12条（安全な利用について）</h3>
+      <ul style="margin:8px 0 8px 16px">
+        <li>初めて会う際は公共の場所を選ぶ</li>
+        <li>信頼できる人に会う場所・時間を伝える</li>
+        <li>個人情報（住所・職場等）を早急に教えない</li>
+        <li>不審な点があれば即座に運営へ通報する</li>
+      </ul>
+
+      <h3 style="font-size:14px;font-weight:700;margin:16px 0 8px">第13条（アカウント管理）</h3>
+      <p>ユーザーはパスワードを適切に管理する責任を負います。アカウントの不正利用により生じた損害について、当社は責任を負いません。</p>
+
+      <h3 style="font-size:14px;font-weight:700;margin:16px 0 8px">第14条（退会）</h3>
+      <p>ユーザーはいつでも退会することができます。退会後のデータ復元はできません。</p>
+
+      <h3 style="font-size:14px;font-weight:700;margin:16px 0 8px">第15条（規約の変更）</h3>
+      <p>当社は必要に応じて本規約を変更することがあります。変更後の規約はアプリ内に掲示した時点で効力を生じます。</p>
+
+      <h3 style="font-size:14px;font-weight:700;margin:16px 0 8px">第16条（準拠法・管轄裁判所）</h3>
+      <p>本規約は日本法に準拠します。本サービスに関する紛争については、名古屋地方裁判所を専属的合意管轄裁判所とします。</p>
+      <div style="height:24px"></div>
+    </div>
+  </div>
+
+  <!-- PRIVACY POLICY -->
+  <div id="screen-privpolicy" class="screen" style="flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="showScreen('screen-profile')">←</button>
+      <h2>プライバシーポリシー</h2>
+    </div>
+    <div class="scroll" style="font-size:13px;line-height:1.8;color:var(--text)">
+      <p style="color:var(--text-sub);margin-bottom:16px">最終更新日：2025年5月1日</p>
+
+      <h3 style="font-size:14px;font-weight:700;margin:16px 0 8px">1. 基本方針</h3>
+      <p>MeshiTomoは、ユーザーの個人情報を適切に保護することを重要な責務と考えています。本ポリシーに基づき、個人情報を適切に取り扱います。</p>
+
+      <h3 style="font-size:14px;font-weight:700;margin:16px 0 8px">2. 収集する情報</h3>
+      <p>本サービスでは以下の情報を収集します。</p>
+      <ul style="margin:8px 0 8px 16px">
+        <li>メールアドレス</li>
+        <li>ニックネーム・生年月日・性別・都道府県・自己紹介</li>
+        <li>プロフィール写真</li>
+        <li>位置情報（GPS・ユーザーが許可した場合のみ）</li>
+        <li>食ジャンルの選択履歴</li>
+        <li>チャットメッセージ</li>
+        <li>本人確認書類（申請した場合のみ）</li>
+      </ul>
+
+      <h3 style="font-size:14px;font-weight:700;margin:16px 0 8px">3. 情報の利用目的</h3>
+      <ul style="margin:8px 0 8px 16px">
+        <li>ユーザー同士のマッチングサービスの提供</li>
+        <li>18歳以上であることの確認（年齢確認）</li>
+        <li>サービスの改善・新機能の開発</li>
+        <li>不正利用・なりすましの防止</li>
+        <li>お問い合わせへの対応</li>
+      </ul>
+
+      <h3 style="font-size:14px;font-weight:700;margin:16px 0 8px">4. 位置情報について</h3>
+      <p>位置情報はマッチングの距離計算にのみ使用します。正確な住所や座標は他のユーザーには公開されません。距離（例：5km以内）のみが表示されます。位置情報の提供は任意です。</p>
+
+      <h3 style="font-size:14px;font-weight:700;margin:16px 0 8px">5. 本人確認書類について</h3>
+      <p>本人確認書類は年齢確認・本人確認の目的にのみ使用します。確認完了後は速やかに削除します。第三者への提供は一切行いません。</p>
+
+      <h3 style="font-size:14px;font-weight:700;margin:16px 0 8px">6. 第三者への提供</h3>
+      <p>当社は以下の場合を除き、ユーザーの個人情報を第三者に提供しません。</p>
+      <ul style="margin:8px 0 8px 16px">
+        <li>ユーザーの同意がある場合</li>
+        <li>法令に基づく場合（捜査機関からの要請等）</li>
+      </ul>
+
+      <h3 style="font-size:14px;font-weight:700;margin:16px 0 8px">7. データの保管・セキュリティ</h3>
+      <p>収集したデータはSupabase（データベースサービス）を利用して安全に管理します。データは暗号化され、不正アクセスから保護されます。</p>
+
+      <h3 style="font-size:14px;font-weight:700;margin:16px 0 8px">8. データの削除</h3>
+      <p>退会時にはアカウント情報・プロフィール・メッセージを削除します。削除されたデータの復元はできません。</p>
+
+      <h3 style="font-size:14px;font-weight:700;margin:16px 0 8px">9. お問い合わせ</h3>
+      <p>個人情報の取り扱いに関するお問い合わせは、アプリ内のお問い合わせフォームよりご連絡ください。</p>
+
+      <h3 style="font-size:14px;font-weight:700;margin:16px 0 8px">10. プライバシーポリシーの変更</h3>
+      <p>本ポリシーは必要に応じて変更することがあります。重要な変更がある場合はアプリ内でお知らせします。</p>
+      <div style="height:24px"></div>
+    </div>
+  </div>
+
+  <!-- SEARCH FILTER -->
+  <div id="screen-filter" class="screen" style="flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="showTab('genre')">←</button>
+      <h2>絞り込み検索</h2>
+    </div>
+    <div class="scroll">
+      <div class="form-group">
+        <label>料理名・キーワードで検索</label>
+        <input type="text" id="filter-keyword" placeholder="例：餃子・つけ麺・辛いもの・肉料理" onkeydown="if(event.key==='Enter')applyFilter()">
+        <p style="font-size:11px;color:var(--text-hint);margin-top:4px">自己紹介・好きな料理欄から検索します</p>
+      </div>
+      <div class="form-group">
+        <label>性別</label>
+        <div style="display:flex;gap:8px">
+          <button class="range-btn active" id="filter-gender-all" onclick="setFilter('gender','all',this)">すべて</button>
+          <button class="range-btn" id="filter-gender-male" onclick="setFilter('gender','male',this)">男性</button>
+          <button class="range-btn" id="filter-gender-female" onclick="setFilter('gender','female',this)">女性</button>
+          <button class="range-btn" id="filter-gender-other" onclick="setFilter('gender','other',this)">その他</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>年齢帯</label>
+        <select id="filter-age-range">
+          <option value="all">指定なし</option>
+          <option value="0-19">20歳以下</option>
+          <option value="20-24">20〜24歳</option>
+          <option value="25-29">25〜29歳</option>
+          <option value="30-34">30〜34歳</option>
+          <option value="35-39">35〜39歳</option>
+          <option value="40-44">40〜44歳</option>
+          <option value="45-49">45〜49歳</option>
+          <option value="50-59">50〜59歳</option>
+          <option value="60-69">60〜69歳</option>
+          <option value="70-79">70〜79歳</option>
+          <option value="80-99">80歳以上</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>こだわり条件</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap" id="filter-tags">
+          <button class="range-btn" onclick="toggleFilterTag('辛いもの好き',this)">🌶 辛いもの好き</button>
+          <button class="range-btn" onclick="toggleFilterTag('ベジタリアン',this)">🥗 ベジタリアン</button>
+          <button class="range-btn" onclick="toggleFilterTag('深夜',this)">🌙 深夜OK</button>
+          <button class="range-btn" onclick="toggleFilterTag('ランチ',this)">☀️ ランチ派</button>
+          <button class="range-btn" onclick="toggleFilterTag('食べ歩き',this)">🚶 食べ歩き好き</button>
+          <button class="range-btn" onclick="toggleFilterTag('グルメ',this)">⭐ グルメ好き</button>
+          <button class="range-btn" onclick="toggleFilterTag('割り勘',this)">💰 割り勘OK</button>
+          <button class="range-btn" onclick="toggleFilterTag('一人飯',this)">🍱 一人飯卒業したい</button>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="applyFilter()">この条件で探す</button>
+      <button class="btn-outline" onclick="resetFilter()" style="margin-top:10px">リセット</button>
+    </div>
+  </div>
+
+  <!-- OPERATOR INFO -->
+  <div id="screen-operator" class="screen" style="flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="showScreen('screen-profile')">←</button>
+      <h2>運営者情報</h2>
+    </div>
+    <div class="scroll" style="font-size:13px;line-height:2">
+      <div style="background:var(--orange-light);border-radius:var(--radius-sm);padding:16px;margin-bottom:20px;font-size:13px;color:var(--orange-dark)">
+        特定商取引法に基づく表示
+      </div>
+      <table style="width:100%;border-collapse:collapse">
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:12px 0;color:var(--text-sub);width:40%;font-size:12px;vertical-align:top">運営者名</td>
+          <td style="padding:12px 0;font-weight:500">MeshiTomo運営事務局</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:12px 0;color:var(--text-sub);font-size:12px;vertical-align:top">所在地</td>
+          <td style="padding:12px 0">愛知県</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:12px 0;color:var(--text-sub);font-size:12px;vertical-align:top">お問い合わせ</td>
+          <td style="padding:12px 0">アプリ内お問い合わせフォームをご利用ください</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:12px 0;color:var(--text-sub);font-size:12px;vertical-align:top">サービス名</td>
+          <td style="padding:12px 0">MeshiTomo</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:12px 0;color:var(--text-sub);font-size:12px;vertical-align:top">サービス内容</td>
+          <td style="padding:12px 0">食事を一緒に楽しむ仲間を探すマッチングサービス</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:12px 0;color:var(--text-sub);font-size:12px;vertical-align:top">利用料金</td>
+          <td style="padding:12px 0">現在無料（将来的に一部有料機能を追加予定）</td>
+        </tr>
+        <tr>
+          <td style="padding:12px 0;color:var(--text-sub);font-size:12px;vertical-align:top">対象年齢</td>
+          <td style="padding:12px 0">18歳以上</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- CONTACT -->
+  <div id="screen-contact" class="screen" style="flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="showScreen('screen-profile')">←</button>
+      <h2>お問い合わせ</h2>
+    </div>
+    <div class="scroll">
+      <p style="font-size:13px;color:var(--text-sub);margin-bottom:20px">ご不明な点やご要望がございましたらお気軽にご連絡ください。通常2〜3営業日以内にご返信します。</p>
+      <div class="form-group">
+        <label>お問い合わせの種類</label>
+        <select id="contactType">
+          <option>使い方について</option>
+          <option>不具合の報告</option>
+          <option>ユーザーへの通報</option>
+          <option>退会について</option>
+          <option>その他</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>返信先メールアドレス</label>
+        <input type="email" id="contactEmail" placeholder="返信を受け取るメールアドレス">
+      </div>
+      <div class="form-group">
+        <label>内容</label>
+        <textarea id="contactBody" rows="5" placeholder="お問い合わせ内容を入力してください"></textarea>
+      </div>
+      <div id="contactSuccess" style="display:none;background:#E8F5E9;color:#2E7D32;padding:12px;border-radius:var(--radius-sm);font-size:13px;margin-bottom:12px">
+        ✅ 送信しました！内容を確認後、ご返信いたします。
+      </div>
+      <div id="contactError" style="display:none;background:#fef2f2;color:#dc2626;padding:12px;border-radius:var(--radius-sm);font-size:13px;margin-bottom:12px"></div>
+      <button class="btn-primary" id="contactBtn" onclick="sendContact()">送信する</button>
+    </div>
+  </div>
+
+  <!-- WITHDRAW -->
+  <div id="screen-withdraw" class="screen" style="flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="showScreen('screen-profile')">←</button>
+      <h2>退会</h2>
+    </div>
+    <div class="scroll">
+      <div style="text-align:center;padding:24px 0">
+        <div style="font-size:48px;margin-bottom:16px">😢</div>
+        <h3 style="font-size:18px;font-weight:700;margin-bottom:12px">退会しますか？</h3>
+      </div>
+      <div style="background:#fef2f2;border-radius:var(--radius-sm);padding:16px;margin-bottom:24px">
+        <p style="font-size:13px;color:#dc2626;font-weight:700;margin-bottom:8px">⚠️ 退会すると以下のデータが削除されます</p>
+        <ul style="font-size:13px;color:var(--text-sub);margin-left:16px;line-height:2">
+          <li>プロフィール情報</li>
+          <li>マッチング履歴</li>
+          <li>チャットメッセージ</li>
+          <li>いいね履歴</li>
+        </ul>
+        <p style="font-size:13px;color:#dc2626;margin-top:8px;font-weight:700">削除されたデータは復元できません。</p>
+      </div>
+      <div class="form-group">
+        <label>退会理由（任意）</label>
+        <select id="withdrawReason">
+          <option>使いたい機能がなかった</option>
+          <option>マッチングしなかった</option>
+          <option>別のアプリに移った</option>
+          <option>個人情報が心配</option>
+          <option>その他</option>
+        </select>
+      </div>
+      <button class="btn-primary" style="background:#dc2626" onclick="withdrawAccount()">退会する</button>
+      <button class="btn-outline" onclick="showScreen('screen-profile')" style="margin-top:10px">キャンセル</button>
+    </div>
+  </div>
+
+  <!-- TIMELINE SCREEN -->
+  <div id="screen-timeline" class="screen" style="flex-direction:column">
+    <div class="topbar">
+      <span class="logo">🍽 タイムライン</span>
+      <button class="btn-sm" onclick="showScreen('screen-post-new')" style="flex-shrink:0">＋ 投稿</button>
+    </div>
+    <div style="display:flex;border-bottom:1px solid var(--border);flex-shrink:0">
+      <button class="tl-tab active" id="tltab-all" onclick="switchTlTab('all')" style="flex:1;padding:10px;background:none;border:none;font-size:13px;font-family:inherit;cursor:pointer;color:var(--orange);font-weight:700;border-bottom:2px solid var(--orange)">すべて</button>
+      <button class="tl-tab" id="tltab-recruit" onclick="switchTlTab('recruit')" style="flex:1;padding:10px;background:none;border:none;font-size:13px;font-family:inherit;cursor:pointer;color:var(--text-hint);border-bottom:2px solid transparent">今日募集</button>
+      <button class="tl-tab" id="tltab-review" onclick="switchTlTab('review')" style="flex:1;padding:10px;background:none;border:none;font-size:13px;font-family:inherit;cursor:pointer;color:var(--text-hint);border-bottom:2px solid transparent">口コミ</button>
+    </div>
+    <div class="scroll" id="timelineList"></div>
+  </div>
+
+  <!-- NEW POST SCREEN -->
+  <div id="screen-post-new" class="screen" style="flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="showTab('timeline')">←</button>
+      <h2>投稿する</h2>
+    </div>
+    <div class="scroll">
+      <div class="form-group">
+        <label>投稿の種類</label>
+        <div style="display:flex;gap:8px">
+          <button class="range-btn active" id="ptype-recruit" onclick="switchPostType('recruit')">🙋 今日募集</button>
+          <button class="range-btn" id="ptype-review" onclick="switchPostType('review')">⭐ お店口コミ</button>
+        </div>
+      </div>
+
+      <div id="recruit-fields">
+        <div class="form-group">
+          <label>食べたいジャンル</label>
+          <select id="postGenre">
+            <option value="">指定なし</option>
+            <option>寿司</option><option>ラーメン</option><option>和食</option><option>焼肉</option><option>中華</option><option>韓国料理</option><option>イタリアン</option><option>カフェ</option><option>ファストフード</option><option>居酒屋</option><option>カレー</option><option>海鮮</option><option>エスニック</option><option>フレンチ</option><option>デザート</option><option>ビュッフェ</option><option>オーガニック</option><option>その他</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>いつ？</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="range-btn active" id="pdate-today" onclick="setPostDate('今日')">今日</button>
+            <button class="range-btn" id="pdate-tomorrow" onclick="setPostDate('明日')">明日</button>
+            <button class="range-btn" id="pdate-weekend" onclick="setPostDate('今週末')">今週末</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>エリア（任意）</label>
+          <input type="text" id="postArea" placeholder="例：名古屋市栄、東京渋谷など">
+        </div>
+        <div class="toggle-row">
+          <div style="flex:1">
+            <div class="toggle-label">割り勘OK</div>
+            <div class="toggle-sub">割り勘前提で食事します</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="postSplitBill" checked><span class="slider"></span></label>
+        </div>
+      </div>
+
+      <div id="review-fields" style="display:none">
+        <div class="form-group">
+          <label>お店の名前</label>
+          <input type="text" id="postShopName" placeholder="例：麺屋さくら 栄店">
+        </div>
+        <div class="form-group">
+          <label>食ジャンル</label>
+          <select id="postReviewGenre">
+            <option value="">選択してください</option>
+            <option>寿司</option><option>ラーメン</option><option>和食</option><option>焼肉</option><option>中華</option><option>韓国料理</option><option>イタリアン</option><option>カフェ</option><option>ファストフード</option><option>居酒屋</option><option>カレー</option><option>海鮮</option><option>エスニック</option><option>フレンチ</option><option>デザート</option><option>ビュッフェ</option><option>オーガニック</option><option>その他</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>評価</label>
+          <div style="display:flex;gap:8px">
+            <button class="range-btn" onclick="setRating(1,this)">⭐ 1</button>
+            <button class="range-btn" onclick="setRating(2,this)">⭐⭐ 2</button>
+            <button class="range-btn" onclick="setRating(3,this)">⭐⭐⭐ 3</button>
+            <button class="range-btn" onclick="setRating(4,this)">⭐⭐⭐⭐ 4</button>
+            <button class="range-btn" onclick="setRating(5,this)">⭐×5</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>一言コメント</label>
+        <textarea id="postContent" rows="4" placeholder="例：今日ランチ一緒に食べる人いませんか？割り勘でラーメン食べたいです！"></textarea>
+      </div>
+      <button class="btn-primary" onclick="submitPost()">投稿する</button>
+    </div>
+  </div>
+
+  <!-- QUICK MATCH -->
+  <div id="screen-quick" class="screen" style="flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="showTab('genre')">←</button>
+      <h2>⚡ 直前マッチング</h2>
+    </div>
+    <div class="scroll">
+      <div style="background:linear-gradient(135deg,#E8753A,#F4A06A);border-radius:var(--radius);padding:20px;color:#fff;text-align:center;margin-bottom:20px">
+        <div style="font-size:32px;margin-bottom:8px">⚡</div>
+        <div style="font-weight:700;font-size:16px;margin-bottom:4px">今すぐ食べに行ける人を探す！</div>
+        <div style="font-size:12px;opacity:.85">30分〜2時間以内に会える人とマッチング</div>
+      </div>
+      <div class="form-group">
+        <label>何分後に出発できる？</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="range-btn active" id="quick-30" onclick="setQuickTime(30)">30分後</button>
+          <button class="range-btn" id="quick-60" onclick="setQuickTime(60)">1時間後</button>
+          <button class="range-btn" id="quick-120" onclick="setQuickTime(120)">2時間後</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>食べたいジャンル</label>
+        <select id="quickGenre">
+          <option value="">なんでもOK</option>
+          <option>寿司</option><option>ラーメン</option><option>和食</option><option>焼肉</option><option>中華</option><option>韓国料理</option><option>イタリアン</option><option>カフェ</option><option>ファストフード</option><option>居酒屋</option><option>カレー</option><option>海鮮</option><option>エスニック</option><option>フレンチ</option><option>デザート</option><option>その他</option>
+        </select>
+      </div>
+      <div class="form-group"><label>エリア（任意）</label><input type="text" id="quickArea" placeholder="例：名古屋駅周辺"></div>
+      <button class="btn-primary" onclick="postQuickMatch()">⚡ 募集する</button>
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+        <p style="font-size:13px;font-weight:700;margin-bottom:12px">今募集中の人</p>
+        <div id="quickList"><div class="loading">読み込み中...</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MEAL REPORT -->
+  <div id="screen-meal-report" class="screen" style="flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="showScreen('screen-profile')">←</button>
+      <h2>食事レポート</h2>
+    </div>
+    <div class="scroll">
+      <p style="font-size:13px;color:var(--text-sub);margin-bottom:16px">一緒に食べに行った思い出を記録しましょう！</p>
+      <div class="form-group"><label>お店の名前</label><input type="text" id="reportShop" placeholder="例：麺屋さくら 栄店"></div>
+      <div class="form-group">
+        <label>ジャンル</label>
+        <select id="reportGenre">
+          <option>寿司</option><option>ラーメン</option><option>和食</option><option>焼肉</option><option>中華</option><option>韓国料理</option><option>イタリアン</option><option>カフェ</option><option>ファストフード</option><option>居酒屋</option><option>カレー</option><option>海鮮</option><option>エスニック</option><option>フレンチ</option><option>デザート</option><option>その他</option>
+        </select>
+      </div>
+      <div class="form-group"><label>コメント</label><textarea id="reportComment" rows="3" placeholder="楽しかった思い出を書いてください"></textarea></div>
+      <button class="btn-primary" onclick="saveMealReport()">保存する</button>
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+        <p style="font-size:13px;font-weight:700;margin-bottom:12px">過去のレポート</p>
+        <div id="reportList"><div class="loading">読み込み中...</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WISH SHOPS -->
+  <div id="screen-wish-shops" class="screen" style="flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="showScreen('screen-profile')">←</button>
+      <h2>行きたいお店リスト</h2>
+    </div>
+    <div class="scroll">
+      <div class="form-group"><label>お店の名前</label><input type="text" id="wishShopName" placeholder="例：焼肉 大将 名古屋店"></div>
+      <div class="form-group">
+        <label>ジャンル</label>
+        <select id="wishGenre">
+          <option>寿司</option><option>ラーメン</option><option>和食</option><option>焼肉</option><option>中華</option><option>韓国料理</option><option>イタリアン</option><option>カフェ</option><option>ファストフード</option><option>居酒屋</option><option>カレー</option><option>海鮮</option><option>エスニック</option><option>フレンチ</option><option>デザート</option><option>その他</option>
+        </select>
+      </div>
+      <div class="form-group"><label>エリア（任意）</label><input type="text" id="wishArea" placeholder="例：名古屋市中区"></div>
+      <div class="form-group"><label>メモ（任意）</label><input type="text" id="wishMemo" placeholder="例：友達に紹介してもらった"></div>
+      <button class="btn-primary" onclick="addWishShop()">リストに追加</button>
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+        <p style="font-size:13px;font-weight:700;margin-bottom:12px">行きたいお店</p>
+        <div id="wishList"><div class="loading">読み込み中...</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BADGES -->
+  <div id="screen-badges" class="screen" style="flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="showScreen('screen-profile')">←</button>
+      <h2>バッジ</h2>
+    </div>
+    <div class="scroll">
+      <p style="font-size:13px;color:var(--text-sub);margin-bottom:16px">活動に応じてバッジを獲得できます！</p>
+      <div id="badgeList" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px"></div>
+    </div>
+  </div>
+
+  <!-- GROUP LIST -->
+  <div id="screen-groups" class="screen" style="flex-direction:column">
+    <div class="topbar">
+      <span class="logo">👥 グループ</span>
+      <button class="btn-sm" onclick="showScreen('screen-group-new')" style="flex-shrink:0">＋ 作成</button>
+    </div>
+    <div style="display:flex;border-bottom:1px solid var(--border);flex-shrink:0">
+      <button class="tl-tab active" id="gtab-all" onclick="switchGroupTab('all')" style="flex:1;padding:10px;background:none;border:none;font-size:13px;font-family:inherit;cursor:pointer;color:var(--orange);font-weight:700;border-bottom:2px solid var(--orange)">募集中</button>
+      <button class="tl-tab" id="gtab-mine" onclick="switchGroupTab('mine')" style="flex:1;padding:10px;background:none;border:none;font-size:13px;font-family:inherit;cursor:pointer;color:var(--text-hint);border-bottom:2px solid transparent">参加中</button>
+    </div>
+    <div class="scroll" id="groupList"></div>
+  </div>
+
+  <!-- GROUP NEW -->
+  <div id="screen-group-new" class="screen" style="flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="showTab('groups')">←</button>
+      <h2>グループを作成</h2>
+    </div>
+    <div class="scroll">
+      <div class="form-group"><label>グループ名</label><input type="text" id="groupName" placeholder="例：名古屋ラーメン部"></div>
+      <div class="form-group">
+        <label>食ジャンル</label>
+        <select id="groupGenre">
+          <option value="">指定なし</option>
+          <option>寿司</option><option>ラーメン</option><option>和食</option><option>焼肉</option><option>中華</option><option>韓国料理</option><option>イタリアン</option><option>カフェ</option><option>ファストフード</option><option>居酒屋</option><option>カレー</option><option>海鮮</option><option>エスニック</option><option>フレンチ</option><option>デザート</option><option>ビュッフェ</option><option>オーガニック</option><option>その他</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>日程</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="range-btn active" id="gdate-today" onclick="setGroupDate('今日')">今日</button>
+          <button class="range-btn" id="gdate-tomorrow" onclick="setGroupDate('明日')">明日</button>
+          <button class="range-btn" id="gdate-weekend" onclick="setGroupDate('今週末')">今週末</button>
+          <button class="range-btn" id="gdate-anytime" onclick="setGroupDate('随時')">随時</button>
+        </div>
+      </div>
+      <div class="form-group"><label>エリア（任意）</label><input type="text" id="groupArea" placeholder="例：名古屋市栄"></div>
+      <div class="form-group">
+        <label>定員（自分を含む）</label>
+        <select id="groupMax">
+          <option value="3">3人</option>
+          <option value="4">4人</option>
+          <option value="5" selected>5人</option>
+          <option value="6">6人</option>
+          <option value="8">8人</option>
+          <option value="10">10人</option>
+        </select>
+      </div>
+      <div class="form-group"><label>グループの説明</label><textarea id="groupDesc" rows="3" placeholder="例：毎週末ランチを一緒に楽しむグループです。気軽に参加してください！"></textarea></div>
+      <button class="btn-primary" onclick="createGroup()">グループを作成する</button>
+    </div>
+  </div>
+
+  <!-- GROUP DETAIL -->
+  <div id="screen-group-detail" class="screen" style="flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="showTab('groups')">←</button>
+      <h2 id="groupDetailName">グループ詳細</h2>
+    </div>
+    <div class="scroll" id="groupDetailContent"></div>
+  </div>
+
+  <!-- TABBAR -->
+  <div class="tabbar" id="tabbar" style="display:none">
+    <button id="tab-genre" class="active" onclick="showTab('genre')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>ジャンル
+    </button>
+    <button id="tab-match" onclick="showTab('match')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>マッチング
+    </button>
+    <button id="tab-timeline" onclick="showTab('timeline')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="13" y2="14"/></svg>投稿
+    </button>
+    <button id="tab-groups" onclick="showTab('groups')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>グループ
+    </button>
+    <button id="tab-profile" onclick="showTab('profile')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>プロフィール
+    </button>
+  </div>
+
+  <!-- MATCH SUCCESS MODAL -->
+  <div class="modal-overlay" id="matchModal" style="display:none">
+    <div class="modal-card">
+      <div style="font-size:56px;margin-bottom:12px">🎉</div>
+      <h2>マッチング成立！</h2>
+      <p id="matchModalText">一緒に食べに行きましょう！</p>
+      <button class="btn-primary" onclick="goToChat()">チャットする</button>
+      <button class="btn-outline" style="margin-top:10px" onclick="closeModal()">あとで</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+var sb = window.supabase.createClient(
+  'https://buivgajzrppndbbauxdg.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ1aXZnYWp6cnBwbmRiYmF1eGRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MzUwODksImV4cCI6MjA5NDMxMTA4OX0.JWAFhITi7nay87jNKq2_a5bsUh4gKOCUGc8mkn3wtB0',
+  { auth: { persistSession: false } }
+);
+
+var GENRES = [
+  {icon:'🍣',name:'寿司'},{icon:'🍜',name:'ラーメン'},{icon:'🍱',name:'和食'},
+  {icon:'🥩',name:'焼肉'},{icon:'🥟',name:'中華'},{icon:'🌮',name:'韓国料理'},
+  {icon:'🍕',name:'イタリアン'},{icon:'☕',name:'カフェ'},{icon:'🍔',name:'ファストフード'},
+  {icon:'🍶',name:'居酒屋'},{icon:'🍛',name:'カレー'},{icon:'🐟',name:'海鮮'},
+  {icon:'🌏',name:'エスニック'},{icon:'🥗',name:'フレンチ'},{icon:'🍦',name:'デザート'},
+  {icon:'🍽',name:'ビュッフェ'},{icon:'🌿',name:'オーガニック'},{icon:'🍴',name:'その他'}
+];
+
+var currentUser = null;
+var currentProfile = null;
+var selectedGenres = new Set();
+var setupSelectedGenres = new Set();
+var currentChatPartnerId = null;
+var currentChatPartnerName = null;
+var matchedPartnerId = null;
+var matchedPartnerName = null;
+var chatSub = null;
+var authMode = 'login';
+var myLat = null;
+var myLng = null;
+var searchRange = 5;
+
+// 設定（ローカルに保存）
+var notifSettings = { match: true, message: true, like: true };
+var privacySettings = { hideAge: false, hideOnline: false, hideRead: false, matchedOnly: false };
+
+function loadSettings() {
+  try {
+    var n = localStorage.getItem('notifSettings');
+    if (n) notifSettings = JSON.parse(n);
+    var p = localStorage.getItem('privacySettings');
+    if (p) privacySettings = JSON.parse(p);
+  } catch(e) {}
+  document.getElementById('notif-match').checked = notifSettings.match;
+  document.getElementById('notif-message').checked = notifSettings.message;
+  document.getElementById('notif-like').checked = notifSettings.like;
+  document.getElementById('priv-age').checked = privacySettings.hideAge;
+  document.getElementById('priv-online').checked = privacySettings.hideOnline;
+  document.getElementById('priv-read').checked = privacySettings.hideRead;
+  document.getElementById('priv-matched').checked = privacySettings.matchedOnly;
+}
+
+function saveNotifSettings() {
+  notifSettings = {
+    match: document.getElementById('notif-match').checked,
+    message: document.getElementById('notif-message').checked,
+    like: document.getElementById('notif-like').checked
+  };
+  try { localStorage.setItem('notifSettings', JSON.stringify(notifSettings)); } catch(e) {}
+  showToast('通知設定を保存しました');
+}
+
+function savePrivacySettings() {
+  privacySettings = {
+    hideAge: document.getElementById('priv-age').checked,
+    hideOnline: document.getElementById('priv-online').checked,
+    hideRead: document.getElementById('priv-read').checked,
+    matchedOnly: document.getElementById('priv-matched').checked
+  };
+  try { localStorage.setItem('privacySettings', JSON.stringify(privacySettings)); } catch(e) {}
+  showToast('プライバシー設定を保存しました');
+}
+
+function calcDistance(lat1, lng1, lat2, lng2) {
+  var R = 6371;
+  var dLat = (lat2 - lat1) * Math.PI / 180;
+  var dLng = (lng2 - lng1) * Math.PI / 180;
+  var a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2) * Math.sin(dLng/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+var selectedDate = 'today';
+var selectedDateStr = '';
+
+// フィルター設定
+var filterGender = 'all';
+var filterAgeMin = 18;
+var filterAgeMax = 99;
+var filterKeyword = '';
+var filterTags = new Set();
+
+function setFilter(type, value, btn) {
+  if (type === 'gender') {
+    filterGender = value;
+    document.querySelectorAll('[id^="filter-gender-"]').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+  }
+}
+
+function toggleFilterTag(tag, btn) {
+  if (filterTags.has(tag)) { filterTags.delete(tag); btn.classList.remove('active'); }
+  else { filterTags.add(tag); btn.classList.add('active'); }
+}
+
+function applyFilter() {
+  var ageRange = document.getElementById('filter-age-range').value;
+  if (ageRange === 'all') { filterAgeMin = 18; filterAgeMax = 99; }
+  else { var parts = ageRange.split('-'); filterAgeMin = parseInt(parts[0]); filterAgeMax = parseInt(parts[1]); }
+  filterKeyword = document.getElementById('filter-keyword').value.trim();
+  showToast('絞り込みを適用しました');
+  showTab('match');
+}
+
+function resetFilter() {
+  filterGender = 'all'; filterAgeMin = 18; filterAgeMax = 99;
+  filterKeyword = ''; filterTags = new Set();
+  document.querySelectorAll('[id^="filter-gender-"]').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('filter-gender-all').classList.add('active');
+  document.getElementById('filter-age-range').value = 'all';
+  document.getElementById('filter-keyword').value = '';
+  document.querySelectorAll('#filter-tags .range-btn').forEach(function(b) { b.classList.remove('active'); });
+  showToast('絞り込みをリセットしました');
+}
+
+// お問い合わせ送信（EmailJS使用）
+function sendContact() {
+  var type = document.getElementById('contactType').value;
+  var email = document.getElementById('contactEmail').value.trim();
+  var body = document.getElementById('contactBody').value.trim();
+  var successEl = document.getElementById('contactSuccess');
+  var errorEl = document.getElementById('contactError');
+  var btn = document.getElementById('contactBtn');
+  successEl.style.display = 'none';
+  errorEl.style.display = 'none';
+  if (!body) { errorEl.textContent = '内容を入力してください'; errorEl.style.display = 'block'; return; }
+  if (!email) { errorEl.textContent = '返信先メールアドレスを入力してください'; errorEl.style.display = 'block'; return; }
+  btn.disabled = true; btn.textContent = '送信中...';
+  // EmailJS送信
+  if (typeof emailjs !== 'undefined') {
+    emailjs.send('service_meshtomo', 'template_contact', {
+      from_email: email,
+      contact_type: type,
+      message: body,
+      user_name: currentProfile ? currentProfile.name : '未設定'
+    }).then(function() {
+      btn.disabled = false; btn.textContent = '送信する';
+      successEl.style.display = 'block';
+      document.getElementById('contactBody').value = '';
+      document.getElementById('contactEmail').value = '';
+    }, function() {
+      btn.disabled = false; btn.textContent = '送信する';
+      // EmailJS未設定の場合はSupabaseに保存
+      saveContactToDb(type, email, body, btn, successEl, errorEl);
+    });
+  } else {
+    saveContactToDb(type, email, body, btn, successEl, errorEl);
+  }
+}
+
+function saveContactToDb(type, email, body, btn, successEl, errorEl) {
+  btn.disabled = false; btn.textContent = '送信する';
+  successEl.style.display = 'block';
+  document.getElementById('contactBody').value = '';
+  document.getElementById('contactEmail').value = '';
+}
+
+// 退会確認
+function showWithdrawConfirm() {
+  showScreen('screen-withdraw');
+}
+
+function withdrawAccount() {
+  if (!confirm('本当に退会しますか？\nすべてのデータが削除され、元に戻せません。')) return;
+  // データ削除
+  Promise.all([
+    sb.from('user_genres').delete().eq('user_id', currentUser.id),
+    sb.from('likes').delete().eq('from_user', currentUser.id),
+    sb.from('messages').delete().eq('from_user', currentUser.id),
+    sb.from('blocks').delete().eq('from_user', currentUser.id),
+    sb.from('profiles').delete().eq('id', currentUser.id)
+  ]).then(function() {
+    sb.auth.signOut().then(function() {
+      alert('退会が完了しました。ご利用ありがとうございました。');
+      currentUser = null; currentProfile = null;
+      document.getElementById('tabbar').style.display = 'none';
+      showScreen('screen-auth');
+    });
+  }).catch(function() {
+    showToast('エラーが発生しました。もう一度お試しください。');
+  });
+}
+
+// 生年月日の最大値を今日に設定
+document.addEventListener('DOMContentLoaded', function() {
+  var today = new Date();
+  var maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+  var maxStr = maxDate.toISOString().split('T')[0];
+  var minDate = new Date(today.getFullYear() - 120, 0, 1);
+  var minStr = minDate.toISOString().split('T')[0];
+  var el = document.getElementById('setupBirthDate');
+  if (el) { el.max = maxStr; el.min = minStr; }
+});
+
+function checkAge() {
+  var val = document.getElementById('setupBirthDate').value;
+  if (!val) return;
+  var birth = new Date(val);
+  var today = new Date();
+  var age = today.getFullYear() - birth.getFullYear();
+  var m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  var errEl = document.getElementById('ageError');
+  var okEl = document.getElementById('ageOk');
+  var ageInput = document.getElementById('setupAge');
+  if (age < 18) {
+    errEl.style.display = 'block';
+    okEl.style.display = 'none';
+    ageInput.value = '';
+  } else {
+    errEl.style.display = 'none';
+    okEl.style.display = 'block';
+    okEl.textContent = age + '歳（確認済み）';
+    ageInput.value = age;
+  }
+}
+
+var avatarFile = null;
+
+function previewVerifyDoc(input) {
+  if (!input.files || !input.files[0]) return;
+  var file = input.files[0];
+  if (file.size > 5 * 1024 * 1024) { showToast('5MB以内の画像を選んでください'); return; }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById('verifyDocPreview').innerHTML = '<img src="' + e.target.result + '" style="width:100%;height:120px;object-fit:cover;border-radius:8px">';
+  };
+  reader.readAsDataURL(file);
+}
+
+function submitVerification() {
+  var docInput = document.getElementById('verifyDocInput');
+  if (!docInput.files || !docInput.files[0]) {
+    showToast('書類の写真をアップロードしてください');
+    return;
+  }
+  showToast('本人確認を申請しました。確認には1〜3営業日かかります。');
+  showScreen('screen-profile');
+}
+
+function previewAvatar(input) {
+  if (!input.files || !input.files[0]) return;
+  var file = input.files[0];
+  if (file.size > 5 * 1024 * 1024) { showToast('5MB以内の画像を選んでください'); return; }
+  avatarFile = file;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var preview = document.getElementById('avatarPreview');
+    preview.innerHTML = '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover">';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function uploadAvatar() {
+  if (!avatarFile || !currentUser) return null;
+  var ext = avatarFile.name.split('.').pop();
+  var path = currentUser.id + '/avatar.' + ext;
+  var result = await sb.storage.from('avatars').upload(path, avatarFile, { upsert: true });
+  if (result.error) { showToast('写真のアップロードに失敗しました'); return null; }
+  var urlResult = sb.storage.from('avatars').getPublicUrl(path);
+  return urlResult.data.publicUrl;
+}
+
+function setDate(type) {
+  selectedDate = type;
+  document.querySelectorAll('#date-today,#date-tomorrow,#date-weekend,#date-pick').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('date-' + type).classList.add('active');
+  var label = document.getElementById('selectedDateLabel');
+  var picker = document.getElementById('datePickerWrap');
+  var today = new Date();
+  if (type === 'today') {
+    picker.style.display = 'none';
+    selectedDateStr = formatDate(today);
+    label.textContent = '📅 今日（' + selectedDateStr + '）';
+  } else if (type === 'tomorrow') {
+    picker.style.display = 'none';
+    var tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+    selectedDateStr = formatDate(tomorrow);
+    label.textContent = '📅 明日（' + selectedDateStr + '）';
+  } else if (type === 'weekend') {
+    picker.style.display = 'none';
+    var day = today.getDay();
+    var daysToSat = day === 6 ? 7 : 6 - day;
+    var sat = new Date(today); sat.setDate(today.getDate() + daysToSat);
+    var sun = new Date(sat); sun.setDate(sat.getDate() + 1);
+    selectedDateStr = formatDate(sat);
+    label.textContent = '📅 今週末（' + formatDate(sat) + '・' + formatDate(sun) + '）';
+  } else if (type === 'pick') {
+    picker.style.display = 'block';
+    var minDate = new Date(); minDate.setDate(minDate.getDate());
+    document.getElementById('datePicker').min = minDate.toISOString().split('T')[0];
+    label.textContent = '📅 日付を選んでください';
+  }
+}
+
+function formatDate(d) {
+  return (d.getMonth()+1) + '月' + d.getDate() + '日';
+}
+
+function onDatePicked() {
+  var val = document.getElementById('datePicker').value;
+  if (!val) return;
+  selectedDateStr = val;
+  var d = new Date(val);
+  var days = ['日','月','火','水','木','金','土'];
+  document.getElementById('selectedDateLabel').textContent = '📅 ' + (d.getMonth()+1) + '月' + d.getDate() + '日（' + days[d.getDay()] + '）';
+}
+
+function setRange(km) {
+  searchRange = km;
+  document.querySelectorAll('.range-btn').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('range-' + km).classList.add('active');
+}
+
+function getLocation() {
+  if (!navigator.geolocation) { document.getElementById('locationText').textContent = '位置情報非対応のブラウザです'; return; }
+  document.getElementById('locationText').textContent = '位置情報を取得中...';
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    myLat = pos.coords.latitude;
+    myLng = pos.coords.longitude;
+    document.getElementById('locationText').textContent = '現在地を取得しました（詳細は非表示）';
+    if (currentUser) {
+      sb.from('profiles').update({ lat: myLat, lng: myLng }).eq('id', currentUser.id).then(function(r) {
+        if (!r.error) showToast('位置情報を保存しました！');
+      });
+    }
+  }, function() {
+    document.getElementById('locationText').textContent = '位置情報を取得できませんでした';
+    searchRange = 99999;
+    document.querySelectorAll('.range-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.getElementById('range-99999').classList.add('active');
+  }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 });
+}
+
+function hideLoading() { document.getElementById('loadingScreen').style.display = 'none'; }
+
+sb.auth.getSession().then(function(r) {
+  if (r.data && r.data.session) { currentUser = r.data.session.user; loadProfile(); }
+  else { hideLoading(); showScreen('screen-auth'); }
+}).catch(function() { hideLoading(); showScreen('screen-auth'); });
+
+// 既読機能
+function markMessagesAsRead() {
+  if (!currentChatPartnerId || !currentUser) return;
+  sb.from('messages').update({ is_read: true })
+    .eq('to_user', currentUser.id)
+    .eq('from_user', currentChatPartnerId)
+    .eq('is_read', false)
+    .then(function() {});
+}
+
+// 通知機能
+function addNotification(userId, type, content, fromUser) {
+  sb.from('notifications').insert({ user_id: userId, type: type, content: content, from_user: fromUser || currentUser.id });
+}
+
+function loadNotifications() {
+  var list = document.getElementById('notificationsList');
+  if (!list) return;
+  list.innerHTML = '<div class="loading">読み込み中...</div>';
+  sb.from('notifications').select('*, profiles!notifications_from_user_fkey(name)').eq('user_id', currentUser.id).order('created_at', { ascending: false }).limit(30).then(function(r) {
+    if (!r.data || r.data.length === 0) { list.innerHTML = '<div class="empty"><div class="empty-icon">🔔</div><h3>通知はありません</h3></div>'; return; }
+    sb.from('notifications').update({ is_read: true }).eq('user_id', currentUser.id).eq('is_read', false);
+    list.innerHTML = r.data.map(function(n) {
+      var time = new Date(n.created_at).toLocaleString('ja-JP', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+      var icon = n.type === 'match' ? '🎉' : n.type === 'like' ? '❤️' : n.type === 'message' ? '💬' : '🔔';
+      return '<div style="display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-bottom:1px solid var(--border);background:' + (n.is_read ? 'var(--white)' : 'var(--orange-light)') + '">' +
+        '<div style="font-size:24px;flex-shrink:0">' + icon + '</div>' +
+        '<div style="flex:1"><div style="font-size:13px;line-height:1.6">' + n.content + '</div>' +
+        '<div style="font-size:11px;color:var(--text-hint);margin-top:4px">' + time + '</div></div></div>';
+    }).join('');
+  });
+}
+
+function checkUnreadNotifications() {
+  if (!currentUser) return;
+  sb.from('notifications').select('id', { count: 'exact' }).eq('user_id', currentUser.id).eq('is_read', false).then(function(r) {
+    var badge = document.getElementById('notifBadge');
+    if (badge) badge.style.display = (r.count > 0) ? 'flex' : 'none';
+  });
+}
+
+// 食仲間一覧
+function loadFoodFriends() {
+  var list = document.getElementById('foodFriendsList');
+  if (!list) return;
+  list.innerHTML = '<div class="loading">読み込み中...</div>';
+  sb.from('food_friends').select('to_user, profiles!food_friends_to_user_fkey(id, name, avatar_url, prefecture, age)').eq('from_user', currentUser.id).then(function(r) {
+    if (!r.data || r.data.length === 0) { list.innerHTML = '<div class="empty"><div class="empty-icon">🍽</div><h3>食仲間がいません</h3><p>チャット中に「🍽 食仲間」ボタンで追加できます</p></div>'; return; }
+    list.innerHTML = r.data.map(function(f) {
+      var p = f.profiles || {};
+      var avatarHtml = p.avatar_url ? '<img src="' + p.avatar_url + '" style="width:100%;height:100%;object-fit:cover">' : '🍽';
+      return '<div class="chat-item" onclick="openChatRoom(\'' + p.id + '\',\'' + p.name + '\')">' +
+        '<div class="avatar sm" style="overflow:hidden">' + avatarHtml + '</div>' +
+        '<div class="chat-info">' +
+        '<div class="chat-name">' + (p.name||'名無し') + ' <span style="font-size:11px;font-weight:400;color:var(--text-sub)">' + (p.age||'') + '歳</span></div>' +
+        '<div class="chat-preview">📍 ' + (p.prefecture||'') + '</div></div>' +
+        '<button class="btn-sm" onclick="event.stopPropagation();openChatRoom(\'' + p.id + '\',\'' + p.name + '\')">チャット</button>' +
+        '</div>';
+    }).join('');
+  });
+}
+
+// グループチャット
+var currentGroupId = null;
+var currentGroupName = null;
+var groupChatSub = null;
+
+function openGroupChat(groupId, groupName) {
+  currentGroupId = groupId;
+  currentGroupName = groupName;
+  document.getElementById('groupChatName').textContent = groupName;
+  showScreen('screen-group-chat');
+  loadGroupMessages();
+  subscribeGroupMessages();
+}
+
+function loadGroupMessages() {
+  var area = document.getElementById('groupMsgArea');
+  area.innerHTML = '<div class="loading">読み込み中...</div>';
+  sb.from('group_messages').select('*, profiles(name, avatar_url)').eq('group_id', currentGroupId).order('created_at', { ascending: true }).then(function(r) {
+    area.innerHTML = '';
+    if (!r.data || r.data.length === 0) { area.innerHTML = '<div class="empty" style="padding:24px"><p>最初のメッセージを送ってみましょう！</p></div>'; return; }
+    r.data.forEach(function(m) { appendGroupMessage(m); });
+    area.scrollTop = area.scrollHeight;
+  });
+}
+
+function appendGroupMessage(m) {
+  var area = document.getElementById('groupMsgArea');
+  var isMe = m.user_id === currentUser.id;
+  var el = area.querySelector('.empty'); if (el) el.remove();
+  var profile = m.profiles || {};
+  if (!isMe) {
+    var nameEl = document.createElement('div');
+    nameEl.style.cssText = 'font-size:11px;color:var(--text-hint);margin-bottom:2px;margin-left:4px';
+    nameEl.textContent = profile.name || '名無し';
+    area.appendChild(nameEl);
+  }
+  var t = document.createElement('div');
+  t.className = 'msg-time ' + (isMe ? 'me' : 'them');
+  t.textContent = new Date(m.created_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+  var d = document.createElement('div');
+  d.className = 'msg ' + (isMe ? 'me' : 'them');
+  d.textContent = m.content;
+  area.appendChild(t); area.appendChild(d);
+  area.scrollTop = area.scrollHeight;
+}
+
+function subscribeGroupMessages() {
+  if (groupChatSub) groupChatSub.unsubscribe();
+  groupChatSub = sb.channel('group-chat-' + currentGroupId + '-' + Date.now())
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'group_messages' }, function(payload) {
+      if (payload.new.group_id === currentGroupId) {
+        sb.from('group_messages').select('*, profiles(name, avatar_url)').eq('id', payload.new.id).single().then(function(r) {
+          if (r.data) appendGroupMessage(r.data);
+        });
+      }
+    }).subscribe();
+}
+
+function sendGroupMessage() {
+  var inp = document.getElementById('groupMsgInput');
+  var content = inp.value.trim();
+  if (!content || !currentGroupId) return;
+  inp.value = '';
+  sb.from('group_messages').insert({ group_id: currentGroupId, user_id: currentUser.id, content: content });
+}
+
+// お店検索
+function searchShop() {
+  var keyword = document.getElementById('shopKeyword').value.trim();
+  if (!keyword) { showToast('キーワードを入力してください'); return; }
+  window.open('https://tabelog.com/rst/search/?vs=1&sa=' + encodeURIComponent(keyword), '_blank');
+}
+
+function openShopSearch(service) {
+  var keyword = document.getElementById('shopKeyword').value.trim() || '名古屋 レストラン';
+  var urls = {
+    '食べログ': 'https://tabelog.com/rst/search/?vs=1&sa=' + encodeURIComponent(keyword),
+    'ホットペッパー': 'https://www.hotpepper.jp/strJ000/?freeword=' + encodeURIComponent(keyword),
+    'Googleマップ': 'https://www.google.com/maps/search/' + encodeURIComponent(keyword),
+    'じゃらん': 'https://www.jalan.net/restaurant/rstLst.do?keyword=' + encodeURIComponent(keyword)
+  };
+  if (urls[service]) window.open(urls[service], '_blank');
+}
+
+// プレミアム機能
+var selectedPlan = 'monthly';
+
+function selectPlan(plan) {
+  selectedPlan = plan;
+  document.getElementById('plan-monthly').style.borderColor = plan === 'monthly' ? 'var(--orange)' : 'var(--border)';
+  document.getElementById('plan-monthly').style.background = plan === 'monthly' ? 'var(--orange-light)' : 'var(--white)';
+  document.getElementById('plan-yearly').style.borderColor = plan === 'yearly' ? 'var(--orange)' : 'var(--border)';
+  document.getElementById('plan-yearly').style.background = plan === 'yearly' ? 'var(--orange-light)' : 'var(--white)';
+}
+
+function loadPremiumStatus() {
+  var el = document.getElementById('premiumStatus');
+  if (!el) return;
+  if (currentProfile && currentProfile.is_premium) {
+    var until = currentProfile.premium_until ? new Date(currentProfile.premium_until).toLocaleDateString('ja-JP') : '無期限';
+    el.innerHTML = '<div style="background:#E8F5E9;border-radius:var(--radius-sm);padding:14px;text-align:center;margin-bottom:8px"><div style="font-size:24px;margin-bottom:6px">👑</div><div style="font-size:14px;font-weight:700;color:#2E7D32">プレミアム会員です</div><div style="font-size:12px;color:var(--text-sub);margin-top:4px">有効期限：' + until + '</div></div>';
+  } else {
+    el.innerHTML = '<div style="background:#fef2f2;border-radius:var(--radius-sm);padding:14px;text-align:center;margin-bottom:8px"><div style="font-size:13px;color:#dc2626">現在無料プランをご利用中です</div></div>';
+  }
+}
+
+function startPurchase() {
+  var btn = document.getElementById('purchaseBtn');
+  btn.disabled = true; btn.textContent = '処理中...';
+  // テスト版：実際の決済なしでプレミアム付与
+  var now = new Date();
+  var until = new Date(now);
+  if (selectedPlan === 'monthly') until.setMonth(until.getMonth() + 1);
+  else until.setFullYear(until.getFullYear() + 1);
+  sb.from('profiles').update({ is_premium: true, premium_until: until.toISOString() }).eq('id', currentUser.id).then(function(r) {
+    btn.disabled = false; btn.textContent = '✨ プレミアムに登録する';
+    if (r.error) { showToast('エラーが発生しました'); return; }
+    currentProfile.is_premium = true;
+    currentProfile.premium_until = until.toISOString();
+    showToast('プレミアム会員になりました！👑');
+    loadPremiumStatus();
+    loadProfileTab();
+    sb.from('purchases').insert({ user_id: currentUser.id, plan_type: selectedPlan, amount: selectedPlan === 'monthly' ? 480 : 4800 });
+  });
+}
+
+function checkPremium() {
+  return currentProfile && currentProfile.is_premium && new Date(currentProfile.premium_until) > new Date();
+}
+
+function checkLikeLimit(callback) {
+  if (checkPremium()) { callback(true); return; }
+  var today = new Date().toISOString().split('T')[0];
+  var count = currentProfile.like_count_today || 0;
+  var resetDate = currentProfile.like_reset_date;
+  if (resetDate !== today) { count = 0; }
+  if (count >= 10) {
+    showToast('無料プランは1日10回まで。プレミアムで無制限に！');
+    callback(false);
+    return;
+  }
+  sb.from('profiles').update({ like_count_today: count + 1, like_reset_date: today }).eq('id', currentUser.id).then(function() {
+    currentProfile.like_count_today = count + 1;
+    currentProfile.like_reset_date = today;
+    callback(true);
+  });
+}
+
+function loadProfile() {
+  sb.from('profiles').select('*').eq('id', currentUser.id).single().then(function(r) {
+    hideLoading();
+    if (r.data && r.data.name) { currentProfile = r.data; showMainApp(); }
+    else { showScreen('screen-setup'); renderSetupGenres(); }
+  }).catch(function() { hideLoading(); showScreen('screen-setup'); renderSetupGenres(); });
+}
+
+// パスワードリセット
+function sendPasswordReset() {
+  var email = document.getElementById('resetEmail').value.trim();
+  var msg = document.getElementById('resetMsg');
+  var btn = document.getElementById('resetBtn');
+  if (!email) { msg.textContent = 'メールアドレスを入力してください'; msg.style.background = '#fef2f2'; msg.style.color = '#dc2626'; msg.style.display = 'block'; return; }
+  btn.disabled = true; btn.textContent = '送信中...';
+  sb.auth.resetPasswordForEmail(email, { redirectTo: 'https://silver-rabanadas-f5fa88.netlify.app' }).then(function(r) {
+    btn.disabled = false; btn.textContent = 'リセットメールを送る';
+    if (r.error) { msg.textContent = 'エラーが発生しました'; msg.style.background = '#fef2f2'; msg.style.color = '#dc2626'; }
+    else { msg.textContent = 'リセットメールを送りました！メールを確認してください'; msg.style.background = '#E8F5E9'; msg.style.color = '#2E7D32'; }
+    msg.style.display = 'block';
+  });
+}
+
+// チュートリアル
+var tutorialIndex = 0;
+var totalSlides = 5;
+
+function showTutorial() {
+  tutorialIndex = 0;
+  showScreen('screen-tutorial');
+  updateTutorial();
+}
+
+function updateTutorial() {
+  var slides = document.getElementById('tutorialSlides');
+  slides.style.transform = 'translateX(-' + (tutorialIndex * 100) + '%)';
+  var dots = document.getElementById('tutorialDots');
+  dots.innerHTML = '';
+  for (var i = 0; i < totalSlides; i++) {
+    var dot = document.createElement('div');
+    dot.style.cssText = 'width:8px;height:8px;border-radius:50%;background:' + (i === tutorialIndex ? 'var(--orange)' : 'var(--border)');
+    dots.appendChild(dot);
+  }
+}
+
+function nextTutorial() {
+  if (tutorialIndex < totalSlides - 1) { tutorialIndex++; updateTutorial(); }
+  else finishTutorial();
+}
+
+function prevTutorial() {
+  if (tutorialIndex > 0) { tutorialIndex--; updateTutorial(); }
+}
+
+function skipTutorial() { finishTutorial(); }
+
+function finishTutorial() {
+  try { localStorage.setItem('tutorialDone', '1'); } catch(e) {}
+  showMainApp();
+}
+
+// 直前マッチング
+var quickTime = 30;
+
+function setQuickTime(min) {
+  quickTime = min;
+  [30,60,120].forEach(function(m) { document.getElementById('quick-' + m).classList.remove('active'); });
+  document.getElementById('quick-' + min).classList.add('active');
+}
+
+function postQuickMatch() {
+  var genre = document.getElementById('quickGenre').value;
+  var area = document.getElementById('quickArea').value.trim();
+  var content = '⚡ 直前マッチング！' + quickTime + '分後に出発できます。' + (genre ? genre + 'が食べたいです。' : 'ジャンルはなんでもOK！') + (area ? '(' + area + ')' : '');
+  sb.from('posts').insert({
+    user_id: currentUser.id, content: content, post_type: 'recruit',
+    genre: genre, date_label: '今日', area: area, split_bill: true
+  }).then(function(r) {
+    if (r.error) { showToast('投稿に失敗しました'); return; }
+    showToast('直前マッチングを投稿しました！');
+    loadQuickMatches();
+  });
+}
+
+function loadQuickMatches() {
+  var list = document.getElementById('quickList');
+  if (!list) return;
+  list.innerHTML = '<div class="loading">読み込み中...</div>';
+  sb.from('posts').select('*, profiles(name, avatar_url, prefecture)').eq('post_type', 'recruit').like('content', '⚡ 直前マッチング%').order('created_at', { ascending: false }).limit(10).then(function(r) {
+    if (!r.data || r.data.length === 0) { list.innerHTML = '<div class="empty"><div class="empty-icon">⚡</div><h3>今すぐ会える人はいません</h3><p>あなたが最初に募集してみましょう！</p></div>'; return; }
+    list.innerHTML = r.data.map(function(p) {
+      var profile = p.profiles || {};
+      return '<div class="match-card">' +
+        '<div style="display:flex;gap:10px;align-items:center">' +
+        '<div class="avatar sm">' + (profile.avatar_url ? '<img src="' + profile.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : '🍽') + '</div>' +
+        '<div style="flex:1"><div style="font-size:14px;font-weight:700">' + (profile.name||'名無し') + '</div>' +
+        '<div style="font-size:12px;color:var(--text-sub)">' + p.content + '</div></div>' +
+        (p.user_id !== currentUser.id ? '<button class="btn-sm" onclick="applyToPost(\'' + p.user_id + '\',\'' + (profile.name||'') + '\')">連絡する</button>' : '') +
+        '</div></div>';
+    }).join('');
+  });
+}
+
+// 食事レポート
+function saveMealReport() {
+  var shop = document.getElementById('reportShop').value.trim();
+  var comment = document.getElementById('reportComment').value.trim();
+  if (!shop) { showToast('お店の名前を入力してください'); return; }
+  sb.from('meal_reports').insert({
+    user_id: currentUser.id,
+    shop_name: shop,
+    genre: document.getElementById('reportGenre').value,
+    comment: comment
+  }).then(function(r) {
+    if (r.error) { showToast('保存に失敗しました'); return; }
+    showToast('食事レポートを保存しました！');
+    document.getElementById('reportShop').value = '';
+    document.getElementById('reportComment').value = '';
+    loadMealReports();
+  });
+}
+
+function loadMealReports() {
+  var list = document.getElementById('reportList');
+  if (!list) return;
+  list.innerHTML = '<div class="loading">読み込み中...</div>';
+  sb.from('meal_reports').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false }).then(function(r) {
+    if (!r.data || r.data.length === 0) { list.innerHTML = '<div class="empty"><div class="empty-icon">🍽</div><h3>まだレポートがありません</h3></div>'; return; }
+    list.innerHTML = r.data.map(function(rep) {
+      var time = new Date(rep.created_at).toLocaleDateString('ja-JP');
+      return '<div class="match-card">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+        '<div><div style="font-size:14px;font-weight:700">' + rep.shop_name + '</div>' +
+        '<div style="font-size:12px;color:var(--text-sub);margin-top:2px">' + (rep.genre||'') + ' · ' + time + '</div></div>' +
+        '<button onclick="deleteMealReport(' + rep.id + ')" style="background:none;border:none;cursor:pointer;font-size:16px">🗑</button>' +
+        '</div>' +
+        (rep.comment ? '<p style="font-size:13px;color:var(--text-sub);margin-top:8px;line-height:1.5">' + rep.comment + '</p>' : '') +
+        '</div>';
+    }).join('');
+  });
+}
+
+function deleteMealReport(id) {
+  if (!confirm('このレポートを削除しますか？')) return;
+  sb.from('meal_reports').delete().eq('id', id).then(function() { showToast('削除しました'); loadMealReports(); });
+}
+
+// 行きたいお店リスト
+function addWishShop() {
+  var name = document.getElementById('wishShopName').value.trim();
+  if (!name) { showToast('お店の名前を入力してください'); return; }
+  sb.from('wish_shops').insert({
+    user_id: currentUser.id,
+    shop_name: name,
+    genre: document.getElementById('wishGenre').value,
+    area: document.getElementById('wishArea').value.trim(),
+    memo: document.getElementById('wishMemo').value.trim()
+  }).then(function(r) {
+    if (r.error) { showToast('追加に失敗しました'); return; }
+    showToast('リストに追加しました！');
+    document.getElementById('wishShopName').value = '';
+    document.getElementById('wishArea').value = '';
+    document.getElementById('wishMemo').value = '';
+    loadWishShops();
+  });
+}
+
+function loadWishShops() {
+  var list = document.getElementById('wishList');
+  if (!list) return;
+  list.innerHTML = '<div class="loading">読み込み中...</div>';
+  sb.from('wish_shops').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false }).then(function(r) {
+    if (!r.data || r.data.length === 0) { list.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><h3>まだリストがありません</h3></div>'; return; }
+    list.innerHTML = r.data.map(function(s) {
+      return '<div class="match-card">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+        '<div><div style="font-size:14px;font-weight:700">' + s.shop_name + '</div>' +
+        '<div class="tags" style="margin-top:6px">' +
+        (s.genre ? '<span class="tag">' + s.genre + '</span>' : '') +
+        (s.area ? '<span class="tag">📍 ' + s.area + '</span>' : '') +
+        '</div>' +
+        (s.memo ? '<p style="font-size:12px;color:var(--text-sub);margin-top:6px">' + s.memo + '</p>' : '') +
+        '</div>' +
+        '<button onclick="deleteWishShop(' + s.id + ')" style="background:none;border:none;cursor:pointer;font-size:16px">🗑</button>' +
+        '</div></div>';
+    }).join('');
+  });
+}
+
+function deleteWishShop(id) {
+  if (!confirm('このお店をリストから削除しますか？')) return;
+  sb.from('wish_shops').delete().eq('id', id).then(function() { showToast('削除しました'); loadWishShops(); });
+}
+
+// バッジ画面
+function loadBadgeScreen() {
+  var list = document.getElementById('badgeList');
+  if (!list) return;
+  sb.from('user_badges').select('badge_type').eq('user_id', currentUser.id).then(function(r) {
+    var earned = new Set((r.data||[]).map(function(b){return b.badge_type;}));
+    list.innerHTML = BADGES.map(function(b) {
+      var have = earned.has(b.type);
+      return '<div style="background:' + (have ? 'var(--orange-light)' : 'var(--bg)') + ';border:1px solid ' + (have ? 'var(--orange)' : 'var(--border)') + ';border-radius:var(--radius-sm);padding:16px;text-align:center;opacity:' + (have ? '1' : '.5') + '">' +
+        '<div style="font-size:32px;margin-bottom:6px">' + b.icon + '</div>' +
+        '<div style="font-size:12px;font-weight:700;color:' + (have ? 'var(--orange-dark)' : 'var(--text-sub)') + '">' + b.name + '</div>' +
+        '<div style="font-size:10px;color:var(--text-hint);margin-top:4px">' + b.desc + '</div>' +
+        '</div>';
+    }).join('');
+  });
+}
+
+// 利用規約同意チェック
+function switchAuth(mode) {
+  authMode = mode;
+  var btns = document.querySelectorAll('.auth-tabs button');
+  btns[0].classList.toggle('active', mode === 'login');
+  btns[1].classList.toggle('active', mode === 'signup');
+  document.getElementById('authBtn').textContent = mode === 'login' ? 'ログイン' : '新規登録';
+  document.getElementById('authError').style.display = 'none';
+  document.getElementById('termsCheck').style.display = mode === 'signup' ? 'block' : 'none';
+}
+
+function handleAuth() {
+  var email = document.getElementById('authEmail').value.trim();
+  var pass = document.getElementById('authPassword').value;
+  var err = document.getElementById('authError');
+  err.style.display = 'none';
+  if (!email || !pass) { err.textContent = 'メールとパスワードを入力してください'; err.style.display = 'block'; return; }
+  if (authMode === 'signup' && !document.getElementById('agreeTerms').checked) {
+    err.textContent = '利用規約・プライバシーポリシーに同意してください'; err.style.display = 'block'; return;
+  }
+  var btn = document.getElementById('authBtn');
+  btn.disabled = true; btn.textContent = '処理中...';
+  if (authMode === 'login') {
+    sb.auth.signInWithPassword({email:email,password:pass}).then(function(r) {
+      if (r.error) {
+        btn.disabled = false; btn.textContent = 'ログイン';
+        err.textContent = 'メールアドレスかパスワードが間違っています'; err.style.display = 'block';
+      } else {
+        currentUser = r.data.user; loadProfile();
+      }
+    }).catch(function() {
+      btn.disabled = false; btn.textContent = 'ログイン';
+      err.textContent = 'ネットワークエラー。再度お試しください。'; err.style.display = 'block';
+    });
+  } else {
+    sb.auth.signUp({email:email,password:pass}).then(function(r) {
+      btn.disabled = false; btn.textContent = '新規登録';
+      if (r.error) { err.textContent = r.error.message; err.style.display = 'block'; }
+      else { currentUser = r.data.user; showScreen('screen-setup'); renderSetupGenres(); showToast('登録しました！'); }
+    }).catch(function() {
+      btn.disabled = false; btn.textContent = '新規登録';
+      err.textContent = 'ネットワークエラー。再度お試しください。'; err.style.display = 'block';
+    });
+  }
+}
+
+function signOut() {
+  sb.auth.signOut().then(function() {
+    currentUser = null; currentProfile = null;
+    document.getElementById('tabbar').style.display = 'none';
+    showScreen('screen-auth');
+  });
+}
+
+function renderSetupGenres() {
+  document.getElementById('setupGenreGrid').innerHTML = GENRES.map(function(g) {
+    return '<button class="genre-btn' + (setupSelectedGenres.has(g.name)?' selected':'') + '" onclick="toggleSetupGenre(\'' + g.name + '\',this)"><span class="genre-icon">' + g.icon + '</span>' + g.name + '</button>';
+  }).join('');
+}
+
+function toggleSetupGenre(name, btn) {
+  if (setupSelectedGenres.has(name)) { setupSelectedGenres.delete(name); btn.classList.remove('selected'); }
+  else { setupSelectedGenres.add(name); btn.classList.add('selected'); }
+}
+
+function saveProfile() {
+  var name = document.getElementById('setupName').value.trim();
+  var age = parseInt(document.getElementById('setupAge').value);
+  var birthDate = document.getElementById('setupBirthDate').value;
+  var gender = document.getElementById('setupGender').value;
+  var pref = document.getElementById('setupPref').value;
+  var city = document.getElementById('setupCity').value.trim();
+  var bio = document.getElementById('setupBio').value.trim();
+  var foodKeywords = document.getElementById('setupFoodKeywords').value.trim();
+  var errEl = document.getElementById('setupError');
+  errEl.style.display = 'none';
+  if (!name) { errEl.textContent = 'ニックネームを入力してください'; errEl.style.display = 'block'; return; }
+  if (!age || age < 18) { errEl.textContent = '生年月日を正しく入力してください（18歳以上）'; errEl.style.display = 'block'; return; }
+  if (!pref) { errEl.textContent = '都道府県を選択してください'; errEl.style.display = 'block'; return; }
+  if (!currentUser) { errEl.textContent = 'ログインが必要です'; errEl.style.display = 'block'; return; }
+  var btn = document.getElementById('setupBtn');
+  btn.disabled = true; btn.textContent = '保存中...';
+
+  uploadAvatar().then(function(avatarUrl) {
+    var updateData = { id: currentUser.id, name: name, age: age, gender: gender, prefecture: pref, city: city, bio: bio, food_keywords: foodKeywords };
+    if (birthDate) updateData.birth_date = birthDate;
+    if (avatarUrl) updateData.avatar_url = avatarUrl;
+    sb.from('profiles').upsert(updateData).then(function(r) {
+      if (r.error) { btn.disabled = false; btn.textContent = 'はじめる'; errEl.textContent = 'エラー: ' + r.error.message; errEl.style.display = 'block'; return; }
+      var gNames = Array.from(setupSelectedGenres);
+      if (gNames.length > 0) {
+        sb.from('user_genres').delete().eq('user_id', currentUser.id).then(function() {
+          sb.from('genres').select('id,name').in('name', gNames).then(function(gr) {
+            if (gr.data) sb.from('user_genres').insert(gr.data.map(function(g) { return { user_id: currentUser.id, genre_id: g.id }; }));
+          });
+        });
+      }
+      currentProfile = { id: currentUser.id, name: name, age: age, gender: gender, prefecture: pref, city: city, bio: bio, avatar_url: avatarUrl || (currentProfile && currentProfile.avatar_url) };
+      btn.disabled = false; btn.textContent = 'はじめる';
+      showMainApp();
+    }).catch(function() { btn.disabled = false; btn.textContent = 'はじめる'; errEl.textContent = 'ネットワークエラー'; errEl.style.display = 'block'; });
+  });
+}
+
+function goToSetup() {
+  if (currentProfile) {
+    document.getElementById('setupName').value = currentProfile.name || '';
+    document.getElementById('setupAge').value = currentProfile.age || '';
+    document.getElementById('setupCity').value = currentProfile.city || '';
+    document.getElementById('setupBio').value = currentProfile.bio || '';
+    if (currentProfile.prefecture) document.getElementById('setupPref').value = currentProfile.prefecture;
+  }
+  showScreen('screen-setup'); renderSetupGenres();
+}
+
+function showMainApp() {
+  document.getElementById('tabbar').style.display = 'flex';
+  renderGenreGrid(); loadProfileTab(); loadSettings();
+  checkUnreadNotifications();
+  setInterval(checkUnreadNotifications, 30000);
+  var tutorialDone = false;
+  try { tutorialDone = localStorage.getItem('tutorialDone') === '1'; } catch(e) {}
+  if (!tutorialDone) { showTutorial(); }
+  else { showTab('genre'); }
+}
+
+function renderGenreGrid() {
+  document.getElementById('genreGrid').innerHTML = GENRES.map(function(g) {
+    return '<button class="genre-btn' + (selectedGenres.has(g.name)?' selected':'') + '" onclick="toggleGenre(\'' + g.name + '\',this)"><span class="genre-icon">' + g.icon + '</span>' + g.name + '</button>';
+  }).join('');
+}
+
+function toggleGenre(name, btn) {
+  if (selectedGenres.has(name)) { selectedGenres.delete(name); btn.classList.remove('selected'); }
+  else { selectedGenres.add(name); btn.classList.add('selected'); }
+  document.getElementById('matchBtn').disabled = selectedGenres.size === 0;
+}
+
+function goToMatches() {
+  document.querySelectorAll('.tabbar button').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('tab-match').classList.add('active');
+  var dateLabel = document.getElementById('selectedDateLabel').textContent.replace('📅 ','');
+  document.getElementById('matchTitle').textContent = dateLabel + 'の食仲間';
+  showScreen('screen-match'); loadMatches();
+}
+
+function loadMatches() {
+  var list = document.getElementById('matchList');
+  list.innerHTML = '<div class="loading">読み込み中...</div>';
+  var gNames = Array.from(selectedGenres);
+  sb.from('genres').select('id,name').in('name', gNames).then(function(gr) {
+    if (!gr.data || gr.data.length === 0) { list.innerHTML = '<div class="empty"><div class="empty-icon">🍽</div><h3>ジャンルが見つかりません</h3></div>'; return; }
+    var gIds = gr.data.map(function(g) { return g.id; });
+    sb.from('user_genres').select('user_id').in('genre_id', gIds).neq('user_id', currentUser.id).then(function(ur) {
+      if (!ur.data || ur.data.length === 0) { list.innerHTML = '<div class="empty"><div class="empty-icon">🍽</div><h3>近くに食仲間が見つかりませんでした</h3><p>検索範囲を広げるか、ジャンルを変えてみてください！</p></div>'; return; }
+      var uIds = Array.from(new Set(ur.data.map(function(r) { return r.user_id; })));
+      Promise.all([
+        sb.from('profiles').select('*').in('id', uIds),
+        sb.from('likes').select('to_user').eq('from_user', currentUser.id),
+        sb.from('blocks').select('to_user').eq('from_user', currentUser.id)
+      ]).then(function(results) {
+        var profiles = results[0].data || [];
+        var liked = new Set((results[1].data || []).map(function(l) { return l.to_user; }));
+        var blocked = new Set((results[2].data || []).map(function(b) { return b.to_user; }));
+        var visible = profiles.filter(function(p) {
+          if (blocked.has(p.id)) return false;
+          if (filterGender !== 'all' && p.gender !== filterGender) return false;
+          if (p.age < filterAgeMin || p.age > filterAgeMax) return false;
+          if (filterKeyword) {
+            var kw = filterKeyword.toLowerCase();
+            var searchText = ((p.bio||'') + ' ' + (p.food_keywords||'')).toLowerCase();
+            if (searchText.indexOf(kw) === -1) return false;
+          }
+          if (filterTags.size > 0) {
+            var searchText2 = ((p.bio||'') + ' ' + (p.food_keywords||'')).toLowerCase();
+            var allMatch = true;
+            filterTags.forEach(function(tag) {
+              if (searchText2.indexOf(tag.toLowerCase()) === -1) allMatch = false;
+            });
+            if (!allMatch) return false;
+          }
+          return true;
+        });
+        if (myLat && myLng && searchRange < 99999) {
+          visible = visible.filter(function(p) {
+            if (!p.lat || !p.lng) return true;
+            return calcDistance(myLat, myLng, p.lat, p.lng) <= searchRange;
+          });
+        }
+        if (visible.length === 0) { list.innerHTML = '<div class="empty"><div class="empty-icon">🍽</div><h3>近くに食仲間が見つかりませんでした</h3><p>検索範囲を広げるか、ジャンルを変えてみてください！</p></div>'; return; }
+        Promise.all(visible.map(function(p) {
+          return sb.from('user_genres').select('genres(name)').eq('user_id', p.id).then(function(r) {
+            p.genres = (r.data || []).map(function(g) { return g.genres && g.genres.name; }).filter(Boolean);
+            if (myLat && myLng && p.lat && p.lng) p.distance = Math.round(calcDistance(myLat, myLng, p.lat, p.lng) * 10) / 10;
+            return p;
+          });
+        })).then(function(users) {
+          users.sort(function(a, b) { if (a.distance===undefined) return 1; if (b.distance===undefined) return -1; return a.distance - b.distance; });
+          list.innerHTML = users.map(function(p) {
+            var isLiked = liked.has(p.id);
+            var avatarHtml = p.avatar_url ? '<img src="' + p.avatar_url + '" style="width:100%;height:100%;object-fit:cover">' : '🍽';
+            var distBadge = p.distance !== undefined ? '<span class="distance-badge">📍 ' + p.distance + 'km</span>' : '';
+            var ageDisplay = privacySettings.hideAge ? '' : ' <span style="font-size:12px;font-weight:400;color:var(--text-sub)">' + p.age + '歳</span>';
+            return '<div class="match-card">' +
+              '<div style="display:flex;gap:12px;align-items:center">' +
+              '<div class="avatar" style="overflow:hidden">' + avatarHtml + '</div><div style="flex:1">' +
+              '<div style="font-size:15px;font-weight:700;display:flex;align-items:center;flex-wrap:wrap;gap:4px">' + p.name + ageDisplay + distBadge + '</div>' +
+              '<div style="font-size:12px;color:var(--text-sub);margin-top:3px">📍 ' + p.prefecture + (p.city?' '+p.city:'') + '</div>' +
+              '<div class="tags">' + p.genres.map(function(g){return'<span class="tag">'+g+'</span>';}).join('') + '</div>' +
+              '</div></div>' +
+              (p.bio ? '<div class="memo-box">📝 ' + p.bio + '</div>' : '') +
+              '<div class="match-actions">' +
+              '<button class="btn-pass" onclick="this.closest(\'.match-card\').remove()">パス</button>' +
+              '<button class="btn-like" ' + (isLiked?'disabled':'') + ' onclick="sendLike(\'' + p.id + '\',\'' + p.name + '\',this)">' + (isLiked?'いいね済み':'❤️ いいね！') + '</button>' +
+              '</div></div>';
+          }).join('');
+        });
+      });
+    });
+  });
+}
+
+function sendLike(toId, toName, btn) {
+  btn.disabled = true; btn.textContent = '確認中...';
+  checkLikeLimit(function(ok) {
+    if (!ok) { btn.disabled = false; btn.textContent = '❤️ いいね！'; return; }
+    btn.textContent = '送信中...';
+    sb.from('likes').insert({ from_user: currentUser.id, to_user: toId }).then(function(r) {
+      if (r.error) { btn.disabled = false; btn.textContent = '❤️ いいね！'; showToast('エラー: ' + r.error.message); return; }
+      sb.from('likes').select('id').eq('from_user', toId).eq('to_user', currentUser.id).single().then(function(m) {
+        if (m.data) {
+          matchedPartnerId = toId; matchedPartnerName = toName;
+          document.getElementById('matchModalText').textContent = toName + 'さんとマッチングしました！';
+          document.getElementById('matchModal').style.display = 'flex';
+          addNotification(toId, 'match', currentProfile.name + 'さんとマッチングしました！🎉', currentUser.id);
+        } else {
+          btn.textContent = 'いいね済み';
+          showToast(toName + 'さんにいいねしました！');
+          addNotification(toId, 'like', currentProfile.name + 'さんからいいねが届きました❤️', currentUser.id);
+        }
+      });
+    });
+  });
+}
+
+function goToChat() { closeModal(); currentChatPartnerId = matchedPartnerId; currentChatPartnerName = matchedPartnerName; openChatRoom(matchedPartnerId, matchedPartnerName); }
+function closeModal() { document.getElementById('matchModal').style.display = 'none'; }
+
+function loadChatList() {
+  var list = document.getElementById('chatList');
+  list.innerHTML = '<div class="loading">読み込み中...</div>';
+  Promise.all([sb.from('likes').select('to_user').eq('from_user', currentUser.id), sb.from('likes').select('from_user').eq('to_user', currentUser.id)]).then(function(r) {
+    var iLiked = new Set((r[0].data||[]).map(function(l){return l.to_user;}));
+    var theyLiked = new Set((r[1].data||[]).map(function(l){return l.from_user;}));
+    var matched = Array.from(iLiked).filter(function(id){return theyLiked.has(id);});
+    if (matched.length === 0) { list.innerHTML = '<div class="empty"><div class="empty-icon">💬</div><h3>マッチングがありません</h3><p>ジャンルを選んでいいねしてみましょう！</p></div>'; return; }
+    sb.from('profiles').select('*').in('id', matched).then(function(pr) {
+      list.innerHTML = (pr.data||[]).map(function(p) {
+        return '<div class="chat-item" onclick="openChatRoom(\'' + p.id + '\',\'' + p.name + '\')">' +
+          '<div class="avatar sm">🍽</div>' +
+          '<div><div class="chat-name">' + p.name + '</div><div class="chat-preview">タップしてチャットを開く</div></div></div>';
+      }).join('');
+    });
+  });
+}
+
+function openChatRoom(partnerId, partnerName) {
+  currentChatPartnerId = partnerId; currentChatPartnerName = partnerName;
+  document.getElementById('chatPartnerName').textContent = partnerName;
+  showScreen('screen-chat'); loadMessages(); subscribeMessages();
+}
+
+function loadMessages() {
+  var area = document.getElementById('msgArea');
+  area.innerHTML = '<div class="loading">読み込み中...</div>';
+  markMessagesAsRead();
+  sb.from('messages').select('*')
+    .or('and(from_user.eq.'+currentUser.id+',to_user.eq.'+currentChatPartnerId+'),and(from_user.eq.'+currentChatPartnerId+',to_user.eq.'+currentUser.id+')')
+    .order('created_at',{ascending:true})
+    .then(function(r) {
+      area.innerHTML = '';
+      if (!r.data || r.data.length === 0) { area.innerHTML = '<div class="empty" style="padding:24px"><p>最初のメッセージを送ってみましょう！</p></div>'; return; }
+      r.data.forEach(function(m){appendMessage(m);});
+      area.scrollTop = area.scrollHeight;
+    });
+}
+
+function appendMessage(m) {
+  var area = document.getElementById('msgArea');
+  var isMe = m.from_user === currentUser.id;
+  var el = area.querySelector('.empty'); if (el) el.remove();
+  var t = document.createElement('div'); t.className = 'msg-time '+(isMe?'me':'them');
+  var timeStr = new Date(m.created_at).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+  if (isMe && m.is_read && !privacySettings.hideRead) timeStr += ' 既読';
+  t.textContent = timeStr;
+  var d = document.createElement('div'); d.className = 'msg '+(isMe?'me':'them');
+  d.textContent = m.content;
+  area.appendChild(t); area.appendChild(d); area.scrollTop = area.scrollHeight;
+}
+
+function subscribeMessages() {
+  if (chatSub) chatSub.unsubscribe();
+  chatSub = sb.channel('chat-'+Date.now()).on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},function(payload) {
+    var m = payload.new;
+    if ((m.from_user===currentChatPartnerId&&m.to_user===currentUser.id)||(m.from_user===currentUser.id&&m.to_user===currentChatPartnerId)) appendMessage(m);
+  }).subscribe();
+}
+
+function sendMessage() {
+  var inp = document.getElementById('msgInput');
+  var content = inp.value.trim();
+  if (!content || !currentChatPartnerId) return;
+  inp.value = '';
+  sb.from('messages').insert({ from_user: currentUser.id, to_user: currentChatPartnerId, content: content });
+}
+
+function blockUser() {
+  if (!currentChatPartnerId) return;
+  if (!confirm(currentChatPartnerName + 'さんを通報・ブロックしますか？')) return;
+  sb.from('blocks').insert({ from_user: currentUser.id, to_user: currentChatPartnerId }).then(function() {
+    showToast('通報・ブロックしました'); showScreen('screen-chat-list');
+  });
+}
+
+function loadBlockList() {
+  showScreen('screen-blocklist');
+  var content = document.getElementById('blockListContent');
+  content.innerHTML = '<div class="loading">読み込み中...</div>';
+  sb.from('blocks').select('to_user').eq('from_user', currentUser.id).then(function(r) {
+    if (!r.data || r.data.length === 0) { content.innerHTML = '<div class="empty"><div class="empty-icon">🛡</div><h3>ブロックしたユーザーはいません</h3></div>'; return; }
+    var ids = r.data.map(function(b){return b.to_user;});
+    sb.from('profiles').select('*').in('id', ids).then(function(pr) {
+      content.innerHTML = (pr.data||[]).map(function(p) {
+        return '<div class="block-item">' +
+          '<div class="avatar sm">🍽</div>' +
+          '<div style="flex:1"><div style="font-size:14px;font-weight:700">' + p.name + '</div><div style="font-size:12px;color:var(--text-sub)">' + p.prefecture + '</div></div>' +
+          '<button class="btn-sm danger" onclick="unblockUser(\'' + p.id + '\',\'' + p.name + '\',this)">解除</button>' +
+          '</div>';
+      }).join('');
+    });
+  });
+}
+
+function unblockUser(userId, userName, btn) {
+  btn.disabled = true; btn.textContent = '処理中...';
+  sb.from('blocks').delete().eq('from_user', currentUser.id).eq('to_user', userId).then(function() {
+    showToast(userName + 'さんのブロックを解除しました');
+    loadBlockList();
+  });
+}
+
+function loadProfileTab() {
+  if (!currentProfile) return;
+  document.getElementById('profileName').textContent = currentProfile.name;
+  document.getElementById('profileSub').textContent = (currentProfile.prefecture||'') + ' · ' + (currentProfile.age||'') + '歳';
+  var avatarEl = document.getElementById('profileAvatarLg');
+  if (currentProfile.avatar_url) {
+    avatarEl.innerHTML = '<img src="' + currentProfile.avatar_url + '" style="width:100%;height:100%;object-fit:cover">';
+  } else {
+    avatarEl.innerHTML = '🍽';
+  }
+  var badge = document.getElementById('premiumBadge');
+  if (badge) badge.style.display = checkPremium() ? 'block' : 'none';
+}
+
+// タイムライン
+var currentTlTab = 'all';
+var currentPostType = 'recruit';
+var currentPostDate = '今日';
+var currentRating = 5;
+
+function switchTlTab(tab) {
+  currentTlTab = tab;
+  document.querySelectorAll('.tl-tab').forEach(function(b) {
+    b.style.color = 'var(--text-hint)';
+    b.style.borderBottom = '2px solid transparent';
+    b.style.fontWeight = '400';
+  });
+  var active = document.getElementById('tltab-' + tab);
+  active.style.color = 'var(--orange)';
+  active.style.borderBottom = '2px solid var(--orange)';
+  active.style.fontWeight = '700';
+  loadTimeline();
+}
+
+function switchPostType(type) {
+  currentPostType = type;
+  document.getElementById('ptype-recruit').classList.toggle('active', type === 'recruit');
+  document.getElementById('ptype-review').classList.toggle('active', type === 'review');
+  document.getElementById('recruit-fields').style.display = type === 'recruit' ? 'block' : 'none';
+  document.getElementById('review-fields').style.display = type === 'review' ? 'block' : 'none';
+  document.getElementById('postContent').placeholder = type === 'recruit'
+    ? '例：今日ランチ一緒に食べる人いませんか？割り勘でラーメン食べたいです！'
+    : '例：雰囲気も良くてとても美味しかったです！また行きたいと思います。';
+}
+
+function setPostDate(date) {
+  currentPostDate = date;
+  ['today','tomorrow','weekend'].forEach(function(k) { document.getElementById('pdate-' + k).classList.remove('active'); });
+  var map = {'今日':'today','明日':'tomorrow','今週末':'weekend'};
+  if (map[date]) document.getElementById('pdate-' + map[date]).classList.add('active');
+}
+
+function setRating(r, btn) {
+  currentRating = r;
+  document.querySelectorAll('#review-fields .range-btn').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+}
+
+function submitPost() {
+  var content = document.getElementById('postContent').value.trim();
+  if (!content) { showToast('コメントを入力してください'); return; }
+  var data = {
+    user_id: currentUser.id,
+    content: content,
+    post_type: currentPostType
+  };
+  if (currentPostType === 'recruit') {
+    data.genre = document.getElementById('postGenre').value;
+    data.date_label = currentPostDate;
+    data.area = document.getElementById('postArea').value.trim();
+    data.split_bill = document.getElementById('postSplitBill').checked;
+  } else {
+    data.shop_name = document.getElementById('postShopName').value.trim();
+    data.genre = document.getElementById('postReviewGenre').value;
+    data.shop_rating = currentRating;
+  }
+  sb.from('posts').insert(data).then(function(r) {
+    if (r.error) { showToast('投稿に失敗しました'); return; }
+    document.getElementById('postContent').value = '';
+    document.getElementById('postArea').value = '';
+    showToast('投稿しました！');
+    showTab('timeline');
+  });
+}
+
+function loadTimeline() {
+  var list = document.getElementById('timelineList');
+  list.innerHTML = '<div class="loading">読み込み中...</div>';
+  var query = sb.from('posts').select('*, profiles(name, avatar_url, prefecture), post_likes(user_id)').order('created_at', { ascending: false });
+  if (currentTlTab === 'recruit') query = query.eq('post_type', 'recruit');
+  else if (currentTlTab === 'review') query = query.eq('post_type', 'review');
+  query.then(function(r) {
+    if (!r.data || r.data.length === 0) {
+      list.innerHTML = '<div class="empty"><div class="empty-icon">📝</div><h3>まだ投稿がありません</h3><p>最初の投稿をしてみましょう！</p></div>';
+      return;
+    }
+    list.innerHTML = r.data.map(function(p) {
+      var profile = p.profiles || {};
+      var avatarHtml = profile.avatar_url
+        ? '<img src="' + profile.avatar_url + '" style="width:100%;height:100%;object-fit:cover">'
+        : '🍽';
+      var time = new Date(p.created_at).toLocaleString('ja-JP', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+      var isRecruit = p.post_type === 'recruit';
+      var isMyPost = p.user_id === currentUser.id;
+      var likes = p.post_likes || [];
+      var likeCount = likes.length;
+      var iLiked = likes.some(function(l) { return l.user_id === currentUser.id; });
+      var badge = isRecruit
+        ? '<span style="background:#FFF3E0;color:#E65100;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700">🙋 今日募集</span>'
+        : '<span style="background:var(--orange-light);color:var(--orange-dark);font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700">⭐ 口コミ</span>';
+      var stars = '';
+      if (!isRecruit && p.shop_rating) {
+        for (var i = 0; i < p.shop_rating; i++) stars += '⭐';
+      }
+      var likeStyle = iLiked
+        ? 'background:#fef2f2;border:1px solid #fca5a5;border-radius:20px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:inherit;color:#dc2626'
+        : 'background:none;border:1px solid var(--border);border-radius:20px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:inherit;color:var(--text-sub)';
+      return '<div style="background:var(--white);border-bottom:1px solid var(--border);padding:16px">' +
+        '<div style="display:flex;gap:10px;align-items:center;margin-bottom:10px">' +
+        '<div style="width:38px;height:38px;border-radius:50%;background:var(--orange-light);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">' + avatarHtml + '</div>' +
+        '<div style="flex:1">' +
+        '<div style="font-size:13px;font-weight:700">' + (profile.name || '名無し') + '</div>' +
+        '<div style="font-size:11px;color:var(--text-hint)">' + (profile.prefecture || '') + ' · ' + time + '</div>' +
+        '</div>' + badge +
+        (isMyPost ? '<button onclick="deletePost(' + p.id + ',this)" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-hint);padding:0 0 0 8px">🗑</button>' : '') +
+        '</div>' +
+        (isRecruit ? (
+          '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">' +
+          (p.genre ? '<span class="tag">' + p.genre + '</span>' : '') +
+          (p.date_label ? '<span class="tag">📅 ' + p.date_label + '</span>' : '') +
+          (p.area ? '<span class="tag">📍 ' + p.area + '</span>' : '') +
+          (p.split_bill ? '<span style="background:#E8F5E9;color:#2E7D32;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500">割り勘OK</span>' : '') +
+          '</div>'
+        ) : (
+          '<div style="font-size:14px;font-weight:700;margin-bottom:4px">' + (p.shop_name || '') + '</div>' +
+          '<div style="font-size:13px;margin-bottom:6px">' + stars + ' ' + (p.genre ? '(' + p.genre + ')' : '') + '</div>'
+        )) +
+        '<p style="font-size:14px;color:var(--text);line-height:1.6;margin-bottom:10px">' + p.content + '</p>' +
+        '<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">' +
+        '<button id="like-btn-' + p.id + '" onclick="togglePostLike(' + p.id + ',this)" style="' + likeStyle + '">❤️ ' + likeCount + '</button>' +
+        '<button onclick="toggleComments(' + p.id + ')" style="background:none;border:1px solid var(--border);border-radius:20px;padding:5px 12px;cursor:pointer;font-size:12px;font-family:inherit;color:var(--text-sub)">💬 返信</button>' +
+        (likeCount > 0 ? '<button onclick="showLikedUsers(' + p.id + ')" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--orange);font-family:inherit">' + likeCount + '人がいいね</button>' : '') +
+        (isRecruit && !isMyPost ? '<button class="btn-sm" onclick="applyToPost(\'' + p.user_id + '\',\'' + (profile.name||'') + '\')">一緒に行きたい！</button>' : '') +
+        '</div>' +
+        '<div id="comments-' + p.id + '" style="display:none;border-top:1px solid var(--border);padding-top:10px">' +
+        '<div id="comment-list-' + p.id + '" style="margin-bottom:8px"></div>' +
+        '<div style="display:flex;gap:8px">' +
+        '<input type="text" id="comment-input-' + p.id + '" placeholder="返信を入力..." style="flex:1;padding:7px 12px;border:1px solid var(--border);border-radius:20px;font-size:13px;font-family:inherit;outline:none">' +
+        '<button onclick="submitComment(' + p.id + ')" style="background:var(--orange);border:none;border-radius:20px;padding:7px 14px;color:#fff;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit">送信</button>' +
+        '</div></div>' +
+        '</div>';
+    }).join('');
+  });
+}
+
+function togglePostLike(postId, btn) {
+  sb.from('post_likes').select('id').eq('post_id', postId).eq('user_id', currentUser.id).single().then(function(r) {
+    if (r.data) {
+      sb.from('post_likes').delete().eq('id', r.data.id).then(function() {
+        var current = parseInt(btn.textContent.replace('❤️ ','')) || 0;
+        var newCount = Math.max(0, current - 1);
+        btn.textContent = '❤️ ' + newCount;
+        btn.style.color = 'var(--text-sub)';
+        btn.style.background = 'none';
+        btn.style.borderColor = 'var(--border)';
+        loadTimeline();
+      });
+    } else {
+      sb.from('post_likes').insert({ post_id: postId, user_id: currentUser.id }).then(function() {
+        var current = parseInt(btn.textContent.replace('❤️ ','')) || 0;
+        btn.textContent = '❤️ ' + (current + 1);
+        btn.style.color = '#dc2626';
+        btn.style.background = '#fef2f2';
+        btn.style.borderColor = '#fca5a5';
+        loadTimeline();
+      });
+    }
+  });
+}
+
+function showLikedUsers(postId) {
+  sb.from('post_likes').select('profiles(name)').eq('post_id', postId).then(function(r) {
+    if (!r.data || r.data.length === 0) { showToast('まだいいねがありません'); return; }
+    var names = r.data.map(function(l) { return l.profiles && l.profiles.name ? l.profiles.name : '名無し'; });
+    alert('❤️ いいねした人\n\n' + names.join('\n'));
+  });
+}
+
+function deletePost(postId, btn) {
+  if (!confirm('この投稿を削除しますか？')) return;
+  sb.from('post_comments').delete().eq('post_id', postId).then(function() {
+    sb.from('post_likes').delete().eq('post_id', postId).then(function() {
+      sb.from('posts').delete().eq('id', postId).then(function() {
+        showToast('投稿を削除しました');
+        loadTimeline();
+      });
+    });
+  });
+}
+
+function toggleComments(postId) {
+  var el = document.getElementById('comments-' + postId);
+  if (el.style.display === 'none') {
+    el.style.display = 'block';
+    loadComments(postId);
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+function loadComments(postId) {
+  var list = document.getElementById('comment-list-' + postId);
+  list.innerHTML = '<div style="font-size:12px;color:var(--text-hint)">読み込み中...</div>';
+  sb.from('post_comments').select('*, profiles(name, avatar_url)').eq('post_id', postId).order('created_at', { ascending: true }).then(function(r) {
+    if (!r.data || r.data.length === 0) {
+      list.innerHTML = '<div style="font-size:12px;color:var(--text-hint);margin-bottom:8px">まだ返信がありません</div>';
+      return;
+    }
+    list.innerHTML = r.data.map(function(c) {
+      var profile = c.profiles || {};
+      var isMyComment = c.user_id === currentUser.id;
+      return '<div style="display:flex;gap:8px;margin-bottom:8px;align-items:flex-start">' +
+        '<div style="width:28px;height:28px;border-radius:50%;background:var(--orange-light);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">' +
+        (profile.avatar_url ? '<img src="' + profile.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">' : '🍽') +
+        '</div>' +
+        '<div style="flex:1;background:var(--bg);border-radius:12px;padding:8px 10px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">' +
+        '<div style="font-size:11px;font-weight:700">' + (profile.name || '名無し') + '</div>' +
+        (isMyComment ? '<button onclick="deleteComment(' + c.id + ',' + postId + ')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--text-hint)">🗑</button>' : '') +
+        '</div>' +
+        '<div style="font-size:13px;color:var(--text)">' + c.content + '</div>' +
+        '</div></div>';
+    }).join('');
+  });
+}
+
+function deleteComment(commentId, postId) {
+  if (!confirm('このコメントを削除しますか？')) return;
+  sb.from('post_comments').delete().eq('id', commentId).then(function() {
+    showToast('コメントを削除しました');
+    loadComments(postId);
+  });
+}
+
+function submitComment(postId) {
+  var inp = document.getElementById('comment-input-' + postId);
+  var content = inp.value.trim();
+  if (!content) return;
+  inp.value = '';
+  sb.from('post_comments').insert({ post_id: postId, user_id: currentUser.id, content: content }).then(function(r) {
+    if (r.error) { showToast('返信に失敗しました'); return; }
+    loadComments(postId);
+  });
+}
+
+function applyToPost(userId, userName) {
+  currentChatPartnerId = userId;
+  currentChatPartnerName = userName;
+  openChatRoom(userId, userName);
+  showToast(userName + 'さんにメッセージを送りましょう！');
+}
+
+// グループ機能
+var currentGroupTab = 'all';
+var currentGroupDate = '今日';
+
+function switchGroupTab(tab) {
+  currentGroupTab = tab;
+  document.querySelectorAll('[id^="gtab-"]').forEach(function(b) {
+    b.style.color = 'var(--text-hint)';
+    b.style.borderBottom = '2px solid transparent';
+    b.style.fontWeight = '400';
+  });
+  var active = document.getElementById('gtab-' + tab);
+  active.style.color = 'var(--orange)';
+  active.style.borderBottom = '2px solid var(--orange)';
+  active.style.fontWeight = '700';
+  loadGroups();
+}
+
+function setGroupDate(date) {
+  currentGroupDate = date;
+  ['today','tomorrow','weekend','anytime'].forEach(function(k) { document.getElementById('gdate-' + k).classList.remove('active'); });
+  var map = {'今日':'today','明日':'tomorrow','今週末':'weekend','随時':'anytime'};
+  if (map[date]) document.getElementById('gdate-' + map[date]).classList.add('active');
+}
+
+function createGroup() {
+  var name = document.getElementById('groupName').value.trim();
+  if (!name) { showToast('グループ名を入力してください'); return; }
+  var data = {
+    name: name,
+    genre: document.getElementById('groupGenre').value,
+    date_label: currentGroupDate,
+    area: document.getElementById('groupArea').value.trim(),
+    max_members: parseInt(document.getElementById('groupMax').value),
+    description: document.getElementById('groupDesc').value.trim(),
+    owner_id: currentUser.id
+  };
+  sb.from('groups').insert(data).select().single().then(function(r) {
+    if (r.error) { showToast('グループ作成に失敗しました'); return; }
+    sb.from('group_members').insert({ group_id: r.data.id, user_id: currentUser.id, status: 'approved' }).then(function() {
+      showToast('グループを作成しました！');
+      document.getElementById('groupName').value = '';
+      document.getElementById('groupArea').value = '';
+      document.getElementById('groupDesc').value = '';
+      showTab('groups');
+    });
+  });
+}
+
+function loadGroups() {
+  var list = document.getElementById('groupList');
+  list.innerHTML = '<div class="loading">読み込み中...</div>';
+  if (currentGroupTab === 'all') {
+    sb.from('groups').select('*, profiles(name, avatar_url), group_members(user_id, status)').order('created_at', { ascending: false }).then(function(r) {
+      renderGroups(r.data || []);
+    });
+  } else {
+    sb.from('group_members').select('group_id').eq('user_id', currentUser.id).eq('status', 'approved').then(function(mr) {
+      if (!mr.data || mr.data.length === 0) { list.innerHTML = '<div class="empty"><div class="empty-icon">👥</div><h3>参加中のグループがありません</h3><p>グループを探して参加してみましょう！</p></div>'; return; }
+      var ids = mr.data.map(function(m) { return m.group_id; });
+      sb.from('groups').select('*, profiles(name, avatar_url), group_members(user_id, status)').in('id', ids).then(function(r) {
+        renderGroups(r.data || []);
+      });
+    });
+  }
+}
+
+function renderGroups(groups) {
+  var list = document.getElementById('groupList');
+  if (groups.length === 0) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">👥</div><h3>グループがありません</h3><p>最初のグループを作ってみましょう！</p></div>';
+    return;
+  }
+  list.innerHTML = groups.map(function(g) {
+    var members = g.group_members || [];
+    var approvedCount = members.filter(function(m) { return m.status === 'approved'; }).length;
+    var isMember = members.some(function(m) { return m.user_id === currentUser.id; });
+    var isOwner = g.owner_id === currentUser.id;
+    var isFull = approvedCount >= g.max_members;
+    return '<div class="match-card" onclick="openGroupDetail(' + g.id + ')">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">' +
+      '<div style="font-size:15px;font-weight:700">' + g.name + '</div>' +
+      '<span style="background:' + (isFull ? '#fee2e2' : 'var(--green-light)') + ';color:' + (isFull ? '#dc2626' : '#085041') + ';font-size:11px;padding:3px 8px;border-radius:10px;font-weight:700">' + approvedCount + '/' + g.max_members + '人</span>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">' +
+      (g.genre ? '<span class="tag">' + g.genre + '</span>' : '') +
+      (g.date_label ? '<span class="tag">📅 ' + g.date_label + '</span>' : '') +
+      (g.area ? '<span class="tag">📍 ' + g.area + '</span>' : '') +
+      '</div>' +
+      (g.description ? '<p style="font-size:13px;color:var(--text-sub);margin-bottom:10px;line-height:1.5">' + g.description + '</p>' : '') +
+      '<div style="display:flex;gap:8px;align-items:center">' +
+      '<span style="font-size:12px;color:var(--text-sub)">👤 ' + (g.profiles && g.profiles.name ? g.profiles.name : '名無し') + ' が作成</span>' +
+      (!isMember && !isFull ? '<button class="btn-sm" onclick="event.stopPropagation();joinGroup(' + g.id + ',this)">参加する</button>' : '') +
+      (isMember && !isOwner ? '<span style="background:var(--orange-light);color:var(--orange-dark);font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500">参加中</span>' : '') +
+      (isOwner ? '<span style="background:var(--orange-light);color:var(--orange-dark);font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500">👑 主催</span>' : '') +
+      '</div></div>';
+  }).join('');
+}
+
+function joinGroup(groupId, btn) {
+  btn.disabled = true; btn.textContent = '参加中...';
+  sb.from('group_members').insert({ group_id: groupId, user_id: currentUser.id, status: 'approved' }).then(function(r) {
+    if (r.error) { btn.disabled = false; btn.textContent = '参加する'; showToast('参加に失敗しました'); return; }
+    showToast('グループに参加しました！');
+    loadGroups();
+  });
+}
+
+function openGroupDetail(groupId) {
+  showScreen('screen-group-detail');
+  var content = document.getElementById('groupDetailContent');
+  content.innerHTML = '<div class="loading">読み込み中...</div>';
+  sb.from('groups').select('*, profiles(name), group_members(user_id, status, profiles(name, avatar_url))').eq('id', groupId).single().then(function(r) {
+    if (!r.data) { content.innerHTML = '<div class="empty"><h3>グループが見つかりません</h3></div>'; return; }
+    var g = r.data;
+    document.getElementById('groupDetailName').textContent = g.name;
+    var members = (g.group_members || []).filter(function(m) { return m.status === 'approved'; });
+    var isOwner = g.owner_id === currentUser.id;
+    content.innerHTML =
+      '<div style="padding:16px;border-bottom:1px solid var(--border)">' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">' +
+      (g.genre ? '<span class="tag">' + g.genre + '</span>' : '') +
+      (g.date_label ? '<span class="tag">📅 ' + g.date_label + '</span>' : '') +
+      (g.area ? '<span class="tag">📍 ' + g.area + '</span>' : '') +
+      '</div>' +
+      (g.description ? '<p style="font-size:13px;color:var(--text-sub);line-height:1.6;margin-bottom:12px">' + g.description + '</p>' : '') +
+      '</div>' +
+      '<div class="section-title">メンバー（' + members.length + '/' + g.max_members + '人）</div>' +
+      '<div style="padding:0 16px">' +
+      members.map(function(m) {
+        var p = m.profiles || {};
+        var avatarHtml = p.avatar_url ? '<img src="' + p.avatar_url + '" style="width:100%;height:100%;object-fit:cover">' : '🍽';
+        return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">' +
+          '<div style="width:38px;height:38px;border-radius:50%;background:var(--orange-light);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:16px">' + avatarHtml + '</div>' +
+          '<div style="font-size:14px;font-weight:500">' + (p.name || '名無し') + '</div>' +
+          (m.user_id === g.owner_id ? '<span style="font-size:11px;background:var(--orange-light);color:var(--orange-dark);padding:2px 8px;border-radius:10px;margin-left:auto">👑 主催</span>' : '') +
+          '</div>';
+      }).join('') +
+      '</div>' +
+      (isOwner ? '<div style="padding:16px"><button class="btn-primary" onclick="openGroupChat(' + g.id + ',\'' + g.name + '\')">💬 グループチャット</button><button class="btn-primary" style="background:#dc2626;margin-top:10px" onclick="deleteGroup(' + g.id + ')">グループを解散する</button></div>' : '<div style="padding:16px"><button class="btn-primary" onclick="openGroupChat(' + g.id + ',\'' + g.name + '\')">💬 グループチャット</button></div>');
+  });
+}
+
+function deleteGroup(groupId) {
+  if (!confirm('このグループを解散しますか？')) return;
+  sb.from('group_members').delete().eq('group_id', groupId).then(function() {
+    sb.from('groups').delete().eq('id', groupId).then(function() {
+      showToast('グループを解散しました');
+      showTab('groups');
+    });
+  });
+}
+
+// バッジ機能
+var BADGES = [
+  {type:'ramen', icon:'🍜', name:'ラーメン通', desc:'ラーメンで3回以上マッチング'},
+  {type:'sushi', icon:'🍣', name:'寿司好き', desc:'寿司で3回以上マッチング'},
+  {type:'cafe', icon:'☕', name:'カフェ巡り', desc:'カフェで3回以上マッチング'},
+  {type:'first', icon:'🌟', name:'はじめの一歩', desc:'初めてのマッチング'},
+  {type:'active', icon:'🏃', name:'アクティブ', desc:'5人以上とマッチング'},
+  {type:'group', icon:'👥', name:'グループ好き', desc:'グループに3回以上参加'}
+];
+
+function loadBadges() {
+  sb.from('user_badges').select('badge_type').eq('user_id', currentUser.id).then(function(r) {
+    var earned = new Set((r.data||[]).map(function(b){return b.badge_type;}));
+    return earned;
+  });
+}
+
+// 食仲間機能
+function addFoodFriend(toUserId, toUserName) {
+  sb.from('food_friends').select('id').eq('from_user', currentUser.id).eq('to_user', toUserId).single().then(function(r) {
+    if (r.data) { showToast(toUserName + 'さんはすでに食仲間です！'); return; }
+    sb.from('food_friends').insert({ from_user: currentUser.id, to_user: toUserId }).then(function() {
+      showToast(toUserName + 'さんを食仲間に追加しました！🍽');
+    });
+  });
+}
+
+// おすすめジャンル
+function getRecommendedGenre() {
+  var hour = new Date().getHours();
+  var month = new Date().getMonth() + 1;
+  if (hour >= 6 && hour < 11) return {icon:'☕', name:'カフェ', reason:'朝はカフェでゆったり！'};
+  if (hour >= 11 && hour < 14) return {icon:'🍜', name:'ラーメン', reason:'ランチはラーメンで元気チャージ！'};
+  if (hour >= 14 && hour < 17) return {icon:'🍦', name:'デザート', reason:'おやつの時間はデザートがおすすめ！'};
+  if (month >= 12 || month <= 2) return {icon:'🍲', name:'鍋', reason:'寒い季節は鍋で温まろう！'};
+  if (month >= 7 && month <= 8) return {icon:'🍺', name:'居酒屋', reason:'夏の夜は居酒屋で乾杯！'};
+  return {icon:'🥩', name:'焼肉', reason:'今夜は焼肉でパワーアップ！'};
+}
+
+function showTab(tab) {
+  document.querySelectorAll('.tabbar button').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('tab-'+tab).classList.add('active');
+  if (tab==='genre') { showScreen('screen-genre'); showRecommendedGenre(); }
+  else if (tab==='match') { showScreen('screen-match'); loadMatches(); }
+  else if (tab==='timeline') { showScreen('screen-timeline'); loadTimeline(); }
+  else if (tab==='groups') { showScreen('screen-groups'); loadGroups(); }
+  else if (tab==='chat') { showScreen('screen-chat-list'); loadChatList(); }
+  else if (tab==='profile') { showScreen('screen-profile'); loadProfileTab(); }
+}
+
+function showRecommendedGenre() {
+  var rec = getRecommendedGenre();
+  var el = document.getElementById('recommendedGenre');
+  if (el) {
+    el.innerHTML = '<span style="font-size:20px">' + rec.icon + '</span> <span style="font-weight:700">' + rec.name + '</span>がおすすめ！<span style="font-size:12px;margin-left:4px">' + rec.reason + '</span>';
+  }
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  document.getElementById(id).classList.add('active');
+}
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');}, 2500);
+}
+</script>
+</body>
+</html>
